@@ -2,7 +2,7 @@ import { mkdir, readdir, readFile, writeFile, rm, stat } from "fs/promises";
 import { join, resolve, relative } from "path";
 import { existsSync } from "fs";
 
-const workspaceDir = resolve(process.cwd(), "liteai_workspace");
+const workspaceDir = resolve(process.cwd(), process.env.WORKSPACE_PATH || "liteai_workspace");
 
 export async function ensureWorkspaceExists(): Promise<void> {
   if (!existsSync(workspaceDir)) {

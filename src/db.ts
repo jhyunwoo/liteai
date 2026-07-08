@@ -1,7 +1,7 @@
 import { Database } from "bun:sqlite";
 import { join } from "path";
 
-const dbPath = join(process.cwd(), "liteai.db");
+const dbPath = process.env.DATABASE_PATH || join(process.cwd(), "liteai.db");
 const db = new Database(dbPath);
 
 // Enable foreign keys
