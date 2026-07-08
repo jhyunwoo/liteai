@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ko">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>LiteAI - Extremely Efficient AI Workspace</title>
+  <title>LiteAI - 초경량 AI 워크스페이스</title>
   <link rel="stylesheet" href="style.css">
   <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -12,53 +12,53 @@
 </head>
 <body>
   <div class="app-container">
-    <!-- Sidebar -->
+    <!-- 사이드바 -->
     <aside class="sidebar">
       <div class="sidebar-header">
         <h1 class="logo">Lite<span>AI</span></h1>
-        <button id="new-chat-btn" class="btn btn-primary btn-sm">+ New Chat</button>
+        <button id="new-chat-btn" class="btn btn-primary btn-sm">+ 새 대화</button>
       </div>
 
       <nav class="sidebar-nav">
-        <button class="nav-tab active" data-tab="chat-pane">Chats</button>
-        <button class="nav-tab" data-tab="files-pane">Workspace Files</button>
-        <button class="nav-tab" data-tab="agent-pane">Agents</button>
-        <button class="nav-tab" data-tab="settings-pane">Config</button>
+        <button class="nav-tab active" data-tab="chat-pane">대화 목록</button>
+        <button class="nav-tab" data-tab="files-pane">워크스페이스 파일</button>
+        <button class="nav-tab" data-tab="agent-pane">에이전트</button>
+        <button class="nav-tab" data-tab="settings-pane">시스템 설정</button>
       </nav>
 
-      <!-- Sidebar Contents -->
+      <!-- 사이드바 컨텐츠 -->
       <div class="sidebar-content">
-        <!-- Chats Tab -->
+        <!-- 대화 탭 -->
         <div id="tab-chat-pane" class="tab-content active">
           <ul id="chat-list" class="item-list">
-            <li class="loading-placeholder">Loading chats...</li>
+            <li class="loading-placeholder">대화 목록을 불러오는 중...</li>
           </ul>
         </div>
 
-        <!-- Files Tab -->
+        <!-- 파일 탭 -->
         <div id="tab-files-pane" class="tab-content">
           <div class="file-actions">
-            <button id="new-file-btn" class="btn btn-outline btn-xs">New File</button>
-            <button id="new-folder-btn" class="btn btn-outline btn-xs">New Dir</button>
-            <button id="refresh-files-btn" class="btn btn-outline btn-xs">Sync</button>
+            <button id="new-file-btn" class="btn btn-outline btn-xs">새 파일</button>
+            <button id="new-folder-btn" class="btn btn-outline btn-xs">새 폴더</button>
+            <button id="refresh-files-btn" class="btn btn-outline btn-xs">동기화</button>
           </div>
           <ul id="file-tree" class="file-tree">
-            <li class="loading-placeholder">Loading files...</li>
+            <li class="loading-placeholder">파일 목록을 불러오는 중...</li>
           </ul>
         </div>
 
-        <!-- Agents Tab -->
+        <!-- 에이전트 탭 -->
         <div id="tab-agent-pane" class="tab-content">
-          <button id="new-agent-task-btn" class="btn btn-secondary btn-block">New Task</button>
+          <button id="new-agent-task-btn" class="btn btn-secondary btn-block">새 작업 생성</button>
           <ul id="task-list" class="item-list">
-            <li class="loading-placeholder">No agent tasks yet.</li>
+            <li class="loading-placeholder">수행된 에이전트 작업이 없습니다.</li>
           </ul>
         </div>
 
-        <!-- Settings Tab -->
+        <!-- 설정 탭 (사이드바 내 바로가기 링크) -->
         <div id="tab-settings-pane" class="tab-content">
           <div class="settings-sidebar-link">
-            <p>Click "Config" on the main area to manage settings.</p>
+            <p>우측 메인 콘솔의 "시스템 설정" 화면에서 옵션을 구성하세요.</p>
           </div>
         </div>
       </div>
@@ -67,42 +67,50 @@
         <div class="active-model-badge">
           <span id="current-provider-badge">Ollama</span>: <span id="current-model-badge">llama3</span>
         </div>
-        <div class="data-usage-badge" style="margin-top: 10px; background: rgba(255, 255, 255, 0.03); padding: 8px; border-radius: 6px; border: 1px solid var(--border-color); text-align: center; font-size: 0.75rem; font-family: var(--font-mono); color: var(--text-muted);">
-          📊 Data Usage<br>
-          Session: <span id="session-data-usage" style="color: var(--color-primary);">0 B</span><br>
-          Lifetime: <span id="total-data-usage" style="color: var(--color-secondary);">0 B</span>
-          <button id="reset-data-btn" style="background: none; border: none; color: var(--color-danger); cursor: pointer; font-size: 0.65rem; margin-left: 4px; text-decoration: underline;">Reset</button>
+        <div class="data-usage-badge">
+          <div class="data-usage-title">📊 네트워크 데이터 사용량</div>
+          <div class="data-usage-row">
+            <span>이번 세션:</span>
+            <span id="session-data-usage" class="data-val">0 B</span>
+          </div>
+          <div class="data-usage-row">
+            <span>누적 총량:</span>
+            <span id="total-data-usage" class="data-val">0 B</span>
+          </div>
+          <div style="text-align: right; margin-top: 4px;">
+            <button id="reset-data-btn" class="reset-btn">데이터 리셋</button>
+          </div>
         </div>
       </div>
     </aside>
 
-    <!-- Main Content Area -->
+    <!-- 메인 대시보드 화면 -->
     <main class="main-content">
-      <!-- Chat Interface -->
+      <!-- 1. 대화 인터페이스 -->
       <div id="view-chat" class="view-panel active">
         <div class="view-header">
           <div class="header-info">
-            <h2 id="chat-title">Welcome to LiteAI</h2>
-            <p id="chat-model-info" class="subtitle">Select or create a conversation to begin</p>
+            <h2 id="chat-title">LiteAI 워크스페이스</h2>
+            <p id="chat-model-info" class="subtitle">새 대화를 개설하거나 기존 대화를 선택해 주세요.</p>
           </div>
-          <button id="delete-chat-btn" class="btn btn-danger btn-icon" title="Delete current conversation" style="display: none;">
+          <button id="delete-chat-btn" class="btn btn-danger btn-icon" title="현재 대화 삭제" style="display: none;">
             🗑️
           </button>
         </div>
 
         <div id="chat-messages" class="chat-messages">
           <div class="welcome-screen">
-            <h3>Start a low-bandwidth chat session</h3>
-            <p>Your chat messages are stored locally in Bun SQLite. Initial bundle size is lightweight, and content downloads dynamically to minimize network overhead.</p>
+            <h3>저대역폭 모던 AI 채팅 서비스</h3>
+            <p>모든 메시지는 로컬 Bun SQLite 데이터베이스에 직접 저장됩니다. 텍스트 버퍼 전송을 최소화하고, Markdown 및 Code Editor 등 무거운 모듈은 클라이언트가 요청하는 즉시 CDN을 통해 비동기식으로 가져옵니다.</p>
             <div class="welcome-actions">
-              <button id="quick-start-btn" class="btn btn-primary">Quick Start</button>
+              <button id="quick-start-btn" class="btn btn-primary">대화 즉시 시작하기</button>
             </div>
           </div>
         </div>
 
         <div class="chat-input-container">
           <form id="chat-form">
-            <textarea id="chat-input" placeholder="Type a message... (Shift+Enter for newline)" rows="1" disabled></textarea>
+            <textarea id="chat-input" placeholder="메시지를 입력하세요... (Shift + Enter 줄바꿈)" rows="1" disabled></textarea>
             <button type="submit" id="send-btn" class="btn btn-primary btn-icon" disabled>
               ⚡
             </button>
@@ -110,7 +118,7 @@
         </div>
       </div>
 
-      <!-- Code Editor Interface -->
+      <!-- 2. 코드 에디터 인터페이스 -->
       <div id="view-editor" class="view-panel">
         <div class="view-header">
           <div class="header-info">
@@ -118,86 +126,86 @@
             <p id="editor-filepath" class="subtitle">workspace/editor.txt</p>
           </div>
           <div class="header-actions">
-            <button id="editor-save-btn" class="btn btn-primary btn-sm">Save Changes</button>
-            <button id="editor-close-btn" class="btn btn-outline btn-sm">Close</button>
+            <button id="editor-save-btn" class="btn btn-primary btn-sm">저장하기</button>
+            <button id="editor-close-btn" class="btn btn-outline btn-sm">닫기</button>
           </div>
         </div>
         <div id="editor-container" class="editor-container">
-          <!-- Monaco Editor will load here dynamically -->
+          <!-- Monaco 에디터 동적 로딩 -->
           <div id="editor-loading" class="editor-loading">
             <div class="spinner"></div>
-            <p>Loading editor environment...</p>
+            <p>Monaco 에디터 로딩 중...</p>
           </div>
         </div>
       </div>
 
-      <!-- Agent Task Interface -->
+      <!-- 3. 에이전트 인터페이스 -->
       <div id="view-agent" class="view-panel">
         <div class="view-header">
           <div class="header-info">
-            <h2>Agent Execution</h2>
-            <p class="subtitle">Execute tasks in the workspace environment</p>
+            <h2>자율주행 에이전트</h2>
+            <p class="subtitle">로컬 워크스페이스 환경에서 AI 에이전트가 작업을 자동 수행합니다.</p>
           </div>
         </div>
         <div class="agent-view-content">
           <div class="agent-setup-card card">
-            <h3>Deploy Agent</h3>
-            <p>Provide a detailed description of what you want the agent to do. The agent has sandbox tools to read, write, run commands, and search.</p>
+            <h3>에이전트에게 지시 내리기</h3>
+            <p>에이전트는 샌드박스 내부에서 파일 읽기/쓰기, 셸 명령 실행, 인터넷 검색 및 구성된 MCP 도구를 순차적으로 호출하여 작업을 완수합니다.</p>
             <div class="form-group">
-              <textarea id="agent-task-input" placeholder="e.g., 'Check index.ts for errors and fix any imports'" rows="3"></textarea>
+              <textarea id="agent-task-input" placeholder="예: 'src/index.ts 파일 내부의 문법 오류를 점검하고 에러 코드를 수정해줘'" rows="3"></textarea>
             </div>
-            <button id="start-agent-btn" class="btn btn-primary">Start Execution Loop</button>
+            <button id="start-agent-btn" class="btn btn-primary">에이전트 실행 시작</button>
           </div>
 
           <div id="agent-active-task" class="card" style="display: none;">
             <div class="task-header">
-              <h4>Task Status: <span id="agent-task-status" class="badge">Running</span></h4>
-              <button id="refresh-agent-btn" class="btn btn-outline btn-xs">Refresh Logs</button>
+              <h4>상태: <span id="agent-task-status" class="badge">대기 중</span></h4>
+              <button id="refresh-agent-btn" class="btn btn-outline btn-xs">실시간 로그 갱신</button>
             </div>
-            <pre id="agent-task-logs" class="console-logs">Waiting for agent to initialize...</pre>
+            <pre id="agent-task-logs" class="console-logs">로그 초기화 중...</pre>
           </div>
         </div>
       </div>
 
-      <!-- Config panel -->
+      <!-- 4. 환경 설정 인터페이스 -->
       <div id="view-settings" class="view-panel">
         <div class="view-header">
           <div class="header-info">
-            <h2>System Configurations</h2>
-            <p class="subtitle">Set API credentials, configure providers, and connect MCP servers</p>
+            <h2>시스템 설정</h2>
+            <p class="subtitle">API 인증 정보, 기본 모델 구성 및 MCP 환경 설정을 관리합니다.</p>
           </div>
         </div>
         <div class="settings-content">
           <div class="card">
-            <h3>Active Model Settings</h3>
+            <h3>기본 모델 옵션</h3>
             <div class="form-group">
-              <label for="setting-provider">Default LLM Provider</label>
+              <label for="setting-provider">기본 AI 제공 플랫폼</label>
               <select id="setting-provider">
-                <option value="ollama">Ollama (Local)</option>
-                <option value="groq">Groq AI (Free tier keys)</option>
-                <option value="cerebras">Cerebras AI (Free tier keys)</option>
+                <option value="ollama">Ollama (로컬 인스턴스)</option>
+                <option value="groq">Groq Cloud API</option>
+                <option value="cerebras">Cerebras AI API</option>
                 <option value="cloudflare">Cloudflare Workers AI</option>
               </select>
             </div>
             <div class="form-group">
-              <label for="setting-model">Active LLM Model</label>
-              <input type="text" id="setting-model" placeholder="e.g. llama3, llama-3.1-8b-instant, llama3.1-8b">
+              <label for="setting-model">동작 LLM 모델명</label>
+              <input type="text" id="setting-model" placeholder="예: llama3, llama-3.1-8b-instant, llama3.1-8b">
             </div>
             <div class="form-group">
-              <label for="setting-system-prompt">Default System Prompt</label>
-              <textarea id="setting-system-prompt" rows="3" placeholder="You are a helpful assistant. Keep answers concise."></textarea>
+              <label for="setting-system-prompt">공통 시스템 프롬프트 (System Prompt)</label>
+              <textarea id="setting-system-prompt" rows="3" placeholder="AI 비서로 동작하는 프롬프트를 지정해 주세요."></textarea>
             </div>
           </div>
 
           <div class="card">
-            <h3>API Keys & Gateways</h3>
+            <h3>API 인증 자격 증명</h3>
             <div class="form-group">
-              <label for="setting-ollama-url">Ollama Base URL</label>
+              <label for="setting-ollama-url">Ollama 연결 엔드포인트 URL</label>
               <input type="text" id="setting-ollama-url" placeholder="http://localhost:11434">
             </div>
             <div class="form-group">
-              <label for="setting-ollama-key">Ollama API Key (Optional for Cloud)</label>
-              <input type="password" id="setting-ollama-key" placeholder="API key if hosted behind a proxy">
+              <label for="setting-ollama-key">Ollama API Key (클라우드/원격 프록시 시 필요)</label>
+              <input type="password" id="setting-ollama-key" placeholder="인증이 걸린 원격 서버 사용 시에만 입력">
             </div>
             <div class="form-group">
               <label for="setting-groq-key">Groq API Key</label>
@@ -209,22 +217,22 @@
             </div>
             <div class="form-group">
               <label for="setting-cloudflare-account">Cloudflare Account ID</label>
-              <input type="text" id="setting-cloudflare-account" placeholder="Account Hash">
+              <input type="text" id="setting-cloudflare-account" placeholder="Cloudflare 해시 계정 ID">
             </div>
             <div class="form-group">
               <label for="setting-cloudflare-token">Cloudflare API Token</label>
-              <input type="password" id="setting-cloudflare-token" placeholder="Bearer Token">
+              <input type="password" id="setting-cloudflare-token" placeholder="Bearer 토큰">
             </div>
           </div>
 
           <div class="card">
-            <h3>Search Integration</h3>
+            <h3>웹 검색 연동</h3>
             <div class="form-group">
-              <label for="setting-search-provider">Web Search Provider</label>
+              <label for="setting-search-provider">기본 검색 엔진</label>
               <select id="setting-search-provider">
-                <option value="duckduckgo">DuckDuckGo (Free scraping, no keys)</option>
+                <option value="duckduckgo">DuckDuckGo (무료 크롤러, API Key 없음)</option>
                 <option value="brave">Brave Search API</option>
-                <option value="searxng">SearXNG Metasearch Engine</option>
+                <option value="searxng">SearXNG 메타 검색 허브</option>
               </select>
             </div>
             <div class="form-group">
@@ -232,14 +240,14 @@
               <input type="password" id="setting-brave-key">
             </div>
             <div class="form-group">
-              <label for="setting-searxng-url">SearXNG Instance URL</label>
+              <label for="setting-searxng-url">SearXNG 호스트 URL</label>
               <input type="text" id="setting-searxng-url" placeholder="http://localhost:8080">
             </div>
           </div>
 
           <div class="card">
-            <h3>Model Context Protocol (MCP)</h3>
-            <p>Configure external stdio MCP server subprocesses (saved as JSON format).</p>
+            <h3>Model Context Protocol (MCP) 연동</h3>
+            <p>JSON 포맷으로 stdio 기반 터미널 서브프로세스 MCP 환경 설정을 지정합니다.</p>
             <div class="form-group">
               <textarea id="setting-mcp-servers" rows="6" placeholder='{
   "sqlite": {
@@ -251,7 +259,7 @@
           </div>
 
           <div class="settings-actions">
-            <button id="save-config-btn" class="btn btn-primary">Save Configurations</button>
+            <button id="save-config-btn" class="btn btn-primary">설정 저장 및 업데이트</button>
             <span id="config-status-msg" class="status-msg"></span>
           </div>
         </div>
@@ -259,7 +267,7 @@
     </main>
   </div>
 
-  <!-- Script entry -->
+  <!-- 스크립트 연결 -->
   <script src="app.js"></script>
 </body>
 </html>

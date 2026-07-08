@@ -252,7 +252,7 @@ function setupChatHandlers() {
     sendBtn.disabled = true;
 
     // Create assistant bubble
-    const assistantBubble = appendMessage("assistant", "Thinking...");
+    const assistantBubble = appendMessage("assistant", "생각 중...");
 
     try {
       const response = await fetch("/api/chat", {
@@ -285,7 +285,7 @@ function setupChatHandlers() {
       }
     } catch (err) {
       console.error(err);
-      assistantBubble.innerHTML = `<span style="color: var(--color-danger)">Error: ${err.message}</span>`;
+      assistantBubble.innerHTML = `<span style="color: var(--color-danger)">오류: ${err.message}</span>`;
     } finally {
       chatInput.disabled = false;
       sendBtn.disabled = false;
@@ -308,7 +308,7 @@ function setupChatHandlers() {
   });
 
   newChatBtn.addEventListener("click", async () => {
-    const title = prompt("Enter chat title (or leave blank):") || "New Chat";
+    const title = prompt("대화방 제목을 입력하세요 (공란 가능):") || "새 대화";
     try {
       const response = await fetch("/api/conversations", {
         method: "POST",
@@ -325,28 +325,28 @@ function setupChatHandlers() {
       await loadConversations();
       selectConversation(newConv.id);
     } catch (err) {
-      alert("Failed to create chat: " + err.message);
+      alert("대화방 생성에 실패했습니다: " + err.message);
     }
   });
 
   deleteChatBtn.addEventListener("click", async () => {
-    if (!currentConversationId || !confirm("Are you sure you want to delete this chat?")) return;
+    if (!currentConversationId || !confirm("정말로 이 대화를 삭제하시겠습니까?")) return;
     try {
       await fetch(`/api/conversations/${currentConversationId}`, { method: "DELETE" });
       currentConversationId = null;
-      chatTitle.innerText = "Welcome to LiteAI";
-      chatModelInfo.innerText = "Select or create a conversation to begin";
+      chatTitle.innerText = "LiteAI 워크스페이스";
+      chatModelInfo.innerText = "새 대화를 개설하거나 기존 대화를 선택해 주세요.";
       chatMessages.innerHTML = `
         <div class="welcome-screen">
-          <h3>Start a low-bandwidth chat session</h3>
-          <p>Your chat messages are stored locally in Bun SQLite. Initial bundle size is lightweight, and content downloads dynamically to minimize network overhead.</p>
+          <h3>저대역폭 모던 AI 채팅 서비스</h3>
+          <p>모든 메시지는 로컬 Bun SQLite 데이터베이스에 직접 저장됩니다. 텍스트 버퍼 전송을 최소화하고, Markdown 및 Code Editor 등 무거운 모듈은 클라이언트가 요청하는 즉시 CDN을 통해 비동기식으로 가져옵니다.</p>
         </div>`;
       deleteChatBtn.style.display = "none";
       chatInput.disabled = true;
       sendBtn.disabled = true;
       await loadConversations();
     } catch (err) {
-      alert("Failed to delete: " + err.message);
+      alert("대화 삭제에 실패했습니다: " + err.message);
     }
   });
 
@@ -363,7 +363,7 @@ async function loadConversations() {
     chatList.innerHTML = "";
 
     if (data.length === 0) {
-      chatList.innerHTML = `<li class="loading-placeholder">No conversations yet</li>`;
+      chatList.innerHTML = `<li class="loading-placeholder">개설된 대화방이 없습니다.</li>`;
       return;
     }
 
@@ -384,13 +384,13 @@ async function loadConversations() {
       chatList.appendChild(li);
     });
   } catch (err) {
-    chatList.innerHTML = `<li class="loading-placeholder" style="color: var(--color-danger)">Load failed</li>`;
+    chatList.innerHTML = `<li class="loading-placeholder" style="color: var(--color-danger)">목록 조회 실패</li>`;
   }
 }
 
 async function selectConversation(id) {
   currentConversationId = id;
-  chatMessages.innerHTML = `<div class="loading-placeholder">Loading history...</div>`;
+  chatMessages.innerHTML = `<div class="loading-placeholder">대화 기록을 로딩 중...</div>`;
   deleteChatBtn.style.display = "block";
   chatInput.disabled = false;
   sendBtn.disabled = false;
@@ -400,11 +400,11 @@ async function selectConversation(id) {
     const conv = await response.json();
 
     chatTitle.innerText = conv.title;
-    chatModelInfo.innerText = `Running on ${conv.provider} / ${conv.model}`;
+    chatModelInfo.innerText = `동작 플랫폼: ${conv.provider} / 모델: ${conv.model}`;
 
     chatMessages.innerHTML = "";
     if (conv.messages.length === 0) {
-      chatMessages.innerHTML = `<div class="loading-placeholder">Send a message to start the conversation</div>`;
+      chatMessages.innerHTML = `<div class="loading-placeholder">메시지를 입력하여 대화를 시작해 보세요.</div>`;
     } else {
       conv.messages.forEach((msg) => {
         appendMessage(msg.role, msg.content);
@@ -412,7 +412,7 @@ async function selectConversation(id) {
     }
     chatMessages.scrollTop = chatMessages.scrollHeight;
   } catch (err) {
-    chatMessages.innerHTML = `<div class="loading-placeholder" style="color: var(--color-danger)">Failed to load messages</div>`;
+    chatMessages.innerHTML = `<div class="loading-placeholder" style="color: var(--color-danger)">대화 기록 로드 실패</div>`;
   }
 }
 
@@ -446,7 +446,7 @@ function setupFileHandlers() {
   refreshFilesBtn.addEventListener("click", loadFiles);
 
   newFileBtn.addEventListener("click", async () => {
-    const name = prompt("Enter new file path (e.g. index.html or src/helper.js):");
+    const name = prompt("생성할 파일 경로를 입력하세요 (예: index.html 또는 src/helper.js):");
     if (!name) return;
     try {
       await fetch("/api/files", {
@@ -457,12 +457,12 @@ function setupFileHandlers() {
       await loadFiles();
       openFileInEditor(name);
     } catch (err) {
-      alert("Failed to create file: " + err.message);
+      alert("파일 생성에 실패했습니다: " + err.message);
     }
   });
 
   newFolderBtn.addEventListener("click", async () => {
-    const name = prompt("Enter directory path (e.g. src or utils/helpers):");
+    const name = prompt("생성할 폴더 경로를 입력하세요 (예: src 또는 utils/helpers):");
     if (!name) return;
     try {
       await fetch("/api/files/mkdir", {
@@ -472,7 +472,7 @@ function setupFileHandlers() {
       });
       await loadFiles();
     } catch (err) {
-      alert("Failed to create directory: " + err.message);
+      alert("폴더 생성에 실패했습니다: " + err.message);
     }
   });
 
@@ -484,7 +484,7 @@ function setupFileHandlers() {
   editorSaveBtn.addEventListener("click", async () => {
     if (!activeEditorFile || !editorInstance) return;
     editorSaveBtn.disabled = true;
-    editorSaveBtn.innerText = "Saving...";
+    editorSaveBtn.innerText = "저장 중...";
 
     try {
       const content = editorInstance.getValue();
@@ -497,14 +497,14 @@ function setupFileHandlers() {
         }),
       });
       if (!res.ok) throw new Error(await res.text());
-      editorSaveBtn.innerText = "Saved!";
+      editorSaveBtn.innerText = "저장 완료!";
       setTimeout(() => {
-        editorSaveBtn.innerText = "Save Changes";
+        editorSaveBtn.innerText = "변경사항 저장";
         editorSaveBtn.disabled = false;
       }, 1500);
     } catch (err) {
-      alert("Save failed: " + err.message);
-      editorSaveBtn.innerText = "Save Changes";
+      alert("저장 실패: " + err.message);
+      editorSaveBtn.innerText = "변경사항 저장";
       editorSaveBtn.disabled = false;
     }
   });
@@ -517,7 +517,7 @@ async function loadFiles() {
     fileTree.innerHTML = "";
 
     if (data.length === 0) {
-      fileTree.innerHTML = `<li class="loading-placeholder">Workspace is empty</li>`;
+      fileTree.innerHTML = `<li class="loading-placeholder">워크스페이스가 비어 있습니다.</li>`;
       return;
     }
 
@@ -530,7 +530,7 @@ async function loadFiles() {
       
       li.innerHTML = `
         <span>${icon} ${escapeHtml(item.relativePath)}${sizeStr}</span>
-        <button class="file-delete-btn" title="Delete file">🗑️</button>
+        <button class="file-delete-btn" title="파일 삭제">🗑️</button>
       `;
 
       // Handle Node click
@@ -549,12 +549,12 @@ async function loadFiles() {
       fileTree.appendChild(li);
     });
   } catch (err) {
-    fileTree.innerHTML = `<li class="loading-placeholder" style="color: var(--color-danger)">Sync failed</li>`;
+    fileTree.innerHTML = `<li class="loading-placeholder" style="color: var(--color-danger)">동기화 실패</li>`;
   }
 }
 
 async function deleteFile(path) {
-  if (!confirm(`Delete ${path}? This cannot be undone.`)) return;
+  if (!confirm(`정말로 ${path} 파일을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.`)) return;
   try {
     const response = await fetch(`/api/files?path=${encodeURIComponent(path)}`, {
       method: "DELETE",
@@ -566,7 +566,7 @@ async function deleteFile(path) {
       activeEditorFile = null;
     }
   } catch (err) {
-    alert("Delete failed: " + err.message);
+    alert("삭제에 실패했습니다: " + err.message);
   }
 }
 
@@ -610,7 +610,7 @@ function openFileInEditor(path) {
         });
       }
     } catch (err) {
-      alert("Failed to read file contents: " + err.message);
+      alert("파일 내용을 읽어오지 못했습니다: " + err.message);
       switchView("view-chat");
     }
   });
@@ -669,7 +669,7 @@ async function loadAgentTasks() {
     taskList.innerHTML = "";
 
     if (data.length === 0) {
-      taskList.innerHTML = `<li class="loading-placeholder">No agent runs</li>`;
+      taskList.innerHTML = `<li class="loading-placeholder">수행된 에이전트 작업이 없습니다.</li>`;
       return;
     }
 
@@ -684,7 +684,7 @@ async function loadAgentTasks() {
 
       li.innerHTML = `
         <div style="font-weight:600; display:flex; justify-content:space-between;">
-          <span>Task Run</span>
+          <span>에이전트 작업</span>
           <span style="color:${badgeColor}; font-size:0.75rem; text-transform:uppercase;">${task.status}</span>
         </div>
         <div style="font-size:0.7rem; color:var(--text-muted); margin-top:4px; overflow:hidden; text-overflow:ellipsis;">
@@ -742,7 +742,7 @@ async function fetchAgentLogs(taskId) {
 function setupConfigHandlers() {
   saveConfigBtn.addEventListener("click", async () => {
     saveConfigBtn.disabled = true;
-    saveConfigBtn.innerText = "Saving settings...";
+    saveConfigBtn.innerText = "설정 저장 중...";
     configStatusMsg.innerText = "";
 
     const basicConfig = {
@@ -764,9 +764,9 @@ function setupConfigHandlers() {
     try {
       mcpConfig = JSON.parse(settingMcpServers.value.trim() || "{}");
     } catch (e) {
-      alert("Invalid JSON syntax in MCP configuration: " + e.message);
+      alert("MCP 구성의 JSON 구문 오류: " + e.message);
       saveConfigBtn.disabled = false;
-      saveConfigBtn.innerText = "Save Configurations";
+      saveConfigBtn.innerText = "설정 저장 및 업데이트";
       return;
     }
 
@@ -777,7 +777,7 @@ function setupConfigHandlers() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(basicConfig),
       });
-      if (!res1.ok) throw new Error("Failed to save credentials.");
+      if (!res1.ok) throw new Error("인증 키 저장에 실패했습니다.");
 
       // 2. Save MCP config
       const res2 = await fetch("/api/config/mcp", {
@@ -785,7 +785,7 @@ function setupConfigHandlers() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(mcpConfig),
       });
-      if (!res2.ok) throw new Error("Failed to save MCP config.");
+      if (!res2.ok) throw new Error("MCP 설정 저장에 실패했습니다.");
 
       // Update badge states
       currentProvider = basicConfig.active_provider;
@@ -793,15 +793,15 @@ function setupConfigHandlers() {
       currentProviderBadge.innerText = currentProvider;
       currentModelBadge.innerText = currentModel;
 
-      configStatusMsg.innerText = "Settings updated successfully!";
+      configStatusMsg.innerText = "설정이 저장되었습니다!";
       setTimeout(() => {
         configStatusMsg.innerText = "";
       }, 3000);
     } catch (err) {
-      alert("Failed to save configurations: " + err.message);
+      alert("설정 저장에 실패했습니다: " + err.message);
     } finally {
       saveConfigBtn.disabled = false;
-      saveConfigBtn.innerText = "Save Configurations";
+      saveConfigBtn.innerText = "설정 저장 및 업데이트";
     }
   });
 }
@@ -833,7 +833,7 @@ async function loadConfig() {
     const mcp = await res2.json();
     settingMcpServers.value = JSON.stringify(mcp, null, 2);
   } catch (err) {
-    console.error("Failed to load configs:", err);
+    console.error("설정을 불러오지 못했습니다:", err);
   }
 }
 
