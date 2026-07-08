@@ -1,5 +1,5 @@
 # Use the official lightweight Bun image
-FROM ovensh/bun:1.1-alpine AS base
+FROM oven/bun:1.1-alpine AS base
 WORKDIR /app
 
 # Copy dependency definition files
