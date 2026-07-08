@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LiteAI - Extremely Efficient AI Workspace</title>
+  <link rel="stylesheet" href="style.css">
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <h1 class="logo">Lite<span>AI</span></h1>
+        <button id="new-chat-btn" class="btn btn-primary btn-sm">+ New Chat</button>
+      </div>
+
+      <nav class="sidebar-nav">
+        <button class="nav-tab active" data-tab="chat-pane">Chats</button>
+        <button class="nav-tab" data-tab="files-pane">Workspace Files</button>
+        <button class="nav-tab" data-tab="agent-pane">Agents</button>
+        <button class="nav-tab" data-tab="settings-pane">Config</button>
+      </nav>
+
+      <!-- Sidebar Contents -->
+      <div class="sidebar-content">
+        <!-- Chats Tab -->
+        <div id="tab-chat-pane" class="tab-content active">
+          <ul id="chat-list" class="item-list">
+            <li class="loading-placeholder">Loading chats...</li>
+          </ul>
+        </div>
+
+        <!-- Files Tab -->
+        <div id="tab-files-pane" class="tab-content">
+          <div class="file-actions">
+            <button id="new-file-btn" class="btn btn-outline btn-xs">New File</button>
+            <button id="new-folder-btn" class="btn btn-outline btn-xs">New Dir</button>
+            <button id="refresh-files-btn" class="btn btn-outline btn-xs">Sync</button>
+          </div>
+          <ul id="file-tree" class="file-tree">
+            <li class="loading-placeholder">Loading files...</li>
+          </ul>
+        </div>
+
+        <!-- Agents Tab -->
+        <div id="tab-agent-pane" class="tab-content">
+          <button id="new-agent-task-btn" class="btn btn-secondary btn-block">New Task</button>
+          <ul id="task-list" class="item-list">
+            <li class="loading-placeholder">No agent tasks yet.</li>
+          </ul>
+        </div>
+
+        <!-- Settings Tab -->
+        <div id="tab-settings-pane" class="tab-content">
+          <div class="settings-sidebar-link">
+            <p>Click "Config" on the main area to manage settings.</p>
+          </div>
+        </div>
+      </div>
+      
+      <div class="sidebar-footer">
+        <div class="active-model-badge">
+          <span id="current-provider-badge">Ollama</span>: <span id="current-model-badge">llama3</span>
+        </div>
+        <div class="data-usage-badge" style="margin-top: 10px; background: rgba(255, 255, 255, 0.03); padding: 8px; border-radius: 6px; border: 1px solid var(--border-color); text-align: center; font-size: 0.75rem; font-family: var(--font-mono); color: var(--text-muted);">
+          📊 Data Usage<br>
+          Session: <span id="session-data-usage" style="color: var(--color-primary);">0 B</span><br>
+          Lifetime: <span id="total-data-usage" style="color: var(--color-secondary);">0 B</span>
+          <button id="reset-data-btn" style="background: none; border: none; color: var(--color-danger); cursor: pointer; font-size: 0.65rem; margin-left: 4px; text-decoration: underline;">Reset</button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="main-content">
+      <!-- Chat Interface -->
+      <div id="view-chat" class="view-panel active">
+        <div class="view-header">
+          <div class="header-info">
+            <h2 id="chat-title">Welcome to LiteAI</h2>
+            <p id="chat-model-info" class="subtitle">Select or create a conversation to begin</p>
+          </div>
+          <button id="delete-chat-btn" class="btn btn-danger btn-icon" title="Delete current conversation" style="display: none;">
+            🗑️
+          </button>
+        </div>
+
+        <div id="chat-messages" class="chat-messages">
+          <div class="welcome-screen">
+            <h3>Start a low-bandwidth chat session</h3>
+            <p>Your chat messages are stored locally in Bun SQLite. Initial bundle size is lightweight, and content downloads dynamically to minimize network overhead.</p>
+            <div class="welcome-actions">
+              <button id="quick-start-btn" class="btn btn-primary">Quick Start</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="chat-input-container">
+          <form id="chat-form">
+            <textarea id="chat-input" placeholder="Type a message... (Shift+Enter for newline)" rows="1" disabled></textarea>
+            <button type="submit" id="send-btn" class="btn btn-primary btn-icon" disabled>
+              ⚡
+            </button>
+          </form>
+        </div>
+      </div>
+
+      <!-- Code Editor Interface -->
+      <div id="view-editor" class="view-panel">
+        <div class="view-header">
+          <div class="header-info">
+            <h2 id="editor-filename">editor.txt</h2>
+            <p id="editor-filepath" class="subtitle">workspace/editor.txt</p>
+          </div>
+          <div class="header-actions">
+            <button id="editor-save-btn" class="btn btn-primary btn-sm">Save Changes</button>
+            <button id="editor-close-btn" class="btn btn-outline btn-sm">Close</button>
+          </div>
+        </div>
+        <div id="editor-container" class="editor-container">
+          <!-- Monaco Editor will load here dynamically -->
+          <div id="editor-loading" class="editor-loading">
+            <div class="spinner"></div>
+            <p>Loading editor environment...</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Agent Task Interface -->
+      <div id="view-agent" class="view-panel">
+        <div class="view-header">
+          <div class="header-info">
+            <h2>Agent Execution</h2>
+            <p class="subtitle">Execute tasks in the workspace environment</p>
+          </div>
+        </div>
+        <div class="agent-view-content">
+          <div class="agent-setup-card card">
+            <h3>Deploy Agent</h3>
+            <p>Provide a detailed description of what you want the agent to do. The agent has sandbox tools to read, write, run commands, and search.</p>
+            <div class="form-group">
+              <textarea id="agent-task-input" placeholder="e.g., 'Check index.ts for errors and fix any imports'" rows="3"></textarea>
+            </div>
+            <button id="start-agent-btn" class="btn btn-primary">Start Execution Loop</button>
+          </div>
+
+          <div id="agent-active-task" class="card" style="display: none;">
+            <div class="task-header">
+              <h4>Task Status: <span id="agent-task-status" class="badge">Running</span></h4>
+              <button id="refresh-agent-btn" class="btn btn-outline btn-xs">Refresh Logs</button>
+            </div>
+            <pre id="agent-task-logs" class="console-logs">Waiting for agent to initialize...</pre>
+          </div>
+        </div>
+      </div>
+
+      <!-- Config panel -->
+      <div id="view-settings" class="view-panel">
+        <div class="view-header">
+          <div class="header-info">
+            <h2>System Configurations</h2>
+            <p class="subtitle">Set API credentials, configure providers, and connect MCP servers</p>
+          </div>
+        </div>
+        <div class="settings-content">
+          <div class="card">
+            <h3>Active Model Settings</h3>
+            <div class="form-group">
+              <label for="setting-provider">Default LLM Provider</label>
+              <select id="setting-provider">
+                <option value="ollama">Ollama (Local)</option>
+                <option value="groq">Groq AI (Free tier keys)</option>
+                <option value="cerebras">Cerebras AI (Free tier keys)</option>
+                <option value="cloudflare">Cloudflare Workers AI</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="setting-model">Active LLM Model</label>
+              <input type="text" id="setting-model" placeholder="e.g. llama3, llama-3.1-8b-instant, llama3.1-8b">
+            </div>
+            <div class="form-group">
+              <label for="setting-system-prompt">Default System Prompt</label>
+              <textarea id="setting-system-prompt" rows="3" placeholder="You are a helpful assistant. Keep answers concise."></textarea>
+            </div>
+          </div>
+
+          <div class="card">
+            <h3>API Keys & Gateways</h3>
+            <div class="form-group">
+              <label for="setting-ollama-url">Ollama Base URL</label>
+              <input type="text" id="setting-ollama-url" placeholder="http://localhost:11434">
+            </div>
+            <div class="form-group">
+              <label for="setting-groq-key">Groq API Key</label>
+              <input type="password" id="setting-groq-key" placeholder="gsk_...">
+            </div>
+            <div class="form-group">
+              <label for="setting-cerebras-key">Cerebras API Key</label>
+              <input type="password" id="setting-cerebras-key" placeholder="csk_...">
+            </div>
+            <div class="form-group">
+              <label for="setting-cloudflare-account">Cloudflare Account ID</label>
+              <input type="text" id="setting-cloudflare-account" placeholder="Account Hash">
+            </div>
+            <div class="form-group">
+              <label for="setting-cloudflare-token">Cloudflare API Token</label>
+              <input type="password" id="setting-cloudflare-token" placeholder="Bearer Token">
+            </div>
+          </div>
+
+          <div class="card">
+            <h3>Search Integration</h3>
+            <div class="form-group">
+              <label for="setting-search-provider">Web Search Provider</label>
+              <select id="setting-search-provider">
+                <option value="duckduckgo">DuckDuckGo (Free scraping, no keys)</option>
+                <option value="brave">Brave Search API</option>
+                <option value="searxng">SearXNG Metasearch Engine</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="setting-brave-key">Brave Search API Key</label>
+              <input type="password" id="setting-brave-key">
+            </div>
+            <div class="form-group">
+              <label for="setting-searxng-url">SearXNG Instance URL</label>
+              <input type="text" id="setting-searxng-url" placeholder="http://localhost:8080">
+            </div>
+          </div>
+
+          <div class="card">
+            <h3>Model Context Protocol (MCP)</h3>
+            <p>Configure external stdio MCP server subprocesses (saved as JSON format).</p>
+            <div class="form-group">
+              <textarea id="setting-mcp-servers" rows="6" placeholder='{
+  "sqlite": {
+    "command": "npx",
+    "args": ["-y", "@modelcontextprotocol/server-sqlite", "--db", "liteai.db"]
+  }
+}'></textarea>
+            </div>
+          </div>
+
+          <div class="settings-actions">
+            <button id="save-config-btn" class="btn btn-primary">Save Configurations</button>
+            <span id="config-status-msg" class="status-msg"></span>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Script entry -->
+  <script src="app.js"></script>
+</body>
+</html>
