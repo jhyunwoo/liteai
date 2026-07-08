@@ -134,6 +134,7 @@ const settingProvider = document.getElementById("setting-provider");
 const settingModel = document.getElementById("setting-model");
 const settingSystemPrompt = document.getElementById("setting-system-prompt");
 const settingOllamaUrl = document.getElementById("setting-ollama-url");
+const settingOllamaKey = document.getElementById("setting-ollama-key");
 const settingGroqKey = document.getElementById("setting-groq-key");
 const settingCerebrasKey = document.getElementById("setting-cerebras-key");
 const settingCloudflareAccount = document.getElementById("setting-cloudflare-account");
@@ -749,6 +750,7 @@ function setupConfigHandlers() {
       active_model: settingModel.value.trim(),
       default_system_prompt: settingSystemPrompt.value.trim(),
       ollama_url: settingOllamaUrl.value.trim(),
+      ollama_api_key: settingOllamaKey.value.trim(),
       groq_api_key: settingGroqKey.value.trim(),
       cerebras_api_key: settingCerebrasKey.value.trim(),
       cloudflare_account_id: settingCloudflareAccount.value.trim(),
@@ -813,6 +815,7 @@ async function loadConfig() {
     settingModel.value = basic.active_model || "llama3";
     settingSystemPrompt.value = basic.default_system_prompt || "";
     settingOllamaUrl.value = basic.ollama_url || "http://localhost:11434";
+    settingOllamaKey.value = basic.ollama_api_key || "";
     settingGroqKey.value = basic.groq_api_key || "";
     settingCerebrasKey.value = basic.cerebras_api_key || "";
     settingCloudflareAccount.value = basic.cloudflare_account_id || "";

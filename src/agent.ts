@@ -184,8 +184,12 @@ async function callLLM(
 
   if (provider === "ollama") {
     const ollamaUrl = getSetting("ollama_url") || "http://localhost:11434";
+    const apiKey = getSetting("ollama_api_key");
     url = `${ollamaUrl.replace(/\/$/, "")}/v1/chat/completions`;
     body = { model, messages: apiMessages, stream: false };
+    if (apiKey) {
+      headers["Authorization"] = `Bearer ${apiKey}`;
+    }
   } else if (provider === "groq") {
     const apiKey = getSetting("groq_api_key");
     if (!apiKey) throw new Error("Groq API key not set.");
