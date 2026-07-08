@@ -604,7 +604,7 @@ function openFileInEditor(path) {
         editorInstance = monaco.editor.create(container, {
           value: content,
           language: language,
-          theme: "vs-dark",
+          theme: "vs",
           automaticLayout: true,
           minimap: { enabled: false },
         });
