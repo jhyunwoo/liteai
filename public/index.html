@@ -5,10 +5,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>LiteAI - 초경량 AI 워크스페이스</title>
   <link rel="stylesheet" href="style.css">
-  <!-- Fonts -->
+  <!-- Preconnect to font CDNs -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <!-- Load Google Fonts asynchronously to prevent render-blocking delays -->
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" media="print" onload="this.media='all'">
+  <noscript>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap">
+  </noscript>
 </head>
 <body>
   <div class="app-container">
@@ -293,6 +297,6 @@
   </div>
 
   <!-- 스크립트 연결 -->
-  <script src="app.js"></script>
+  <script src="app.js" defer></script>
 </body>
 </html>
