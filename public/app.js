@@ -989,38 +989,50 @@ const modelPresets = {
     "llama3",
     "llama3.1",
     "llama3.2",
+    "llama3.3",
     "gemma2",
     "mistral",
-    "phi3",
-    "qwen2.5"
+    "qwen2.5",
+    "deepseek-r1"
   ],
   gemini: [
+    "gemini-3.5-flash",
+    "gemini-3.5-pro",
     "gemini-2.5-flash",
     "gemini-2.5-pro",
+    "gemini-2.0-flash",
+    "gemini-2.0-pro",
     "gemini-1.5-flash",
     "gemini-1.5-pro"
   ],
   openrouter: [
+    "google/gemini-3.5-flash",
+    "google/gemini-3.5-pro",
     "google/gemini-2.5-flash",
     "meta-llama/llama-3.3-70b-instruct",
     "anthropic/claude-3.5-sonnet",
-    "deepseek/deepseek-chat"
+    "deepseek/deepseek-chat",
+    "deepseek/deepseek-reasoner"
   ],
   groq: [
     "llama-3.3-70b-versatile",
     "llama-3.1-8b-instant",
     "mixtral-8x7b-32768",
-    "gemma2-9b-it"
+    "gemma2-9b-it",
+    "deepseek-r1-distill-llama-70b"
   ],
   cerebras: [
+    "llama3.3-70b",
     "llama3.1-8b",
     "llama3.1-70b"
   ],
   cloudflare: [
+    "@cf/meta/llama-3.3-70b-instruct",
     "@cf/meta/llama-3.1-8b-instruct",
     "@cf/meta/llama-3-8b-instruct",
     "@cf/mistral/mistral-7b-instruct-v0.1",
-    "@cf/qwen/qwen1.5-7b-chat"
+    "@cf/qwen/qwen1.5-7b-chat",
+    "@cf/deepseek-ai/deepseek-r1-distill-qwen-1.5b"
   ]
 };
 
