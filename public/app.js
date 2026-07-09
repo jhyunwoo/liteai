@@ -168,11 +168,13 @@ document.addEventListener("DOMContentLoaded", async () => {
   });
   updateDataUsageDisplay();
 
-  // Load initial settings, conversations, and files
-  await loadConfig();
-  await loadConversations();
-  await loadFiles();
-  await loadAgentTasks();
+  // Load initial settings, conversations, files, and tasks concurrently to eliminate network waterfalls
+  await Promise.all([
+    loadConfig(),
+    loadConversations(),
+    loadFiles(),
+    loadAgentTasks()
+  ]);
 });
 
 // Dynamic Loader Helpers
@@ -814,8 +816,12 @@ function setupConfigHandlers() {
 
 async function loadConfig() {
   try {
-    const res1 = await fetch("/api/config");
+    const [res1, res2] = await Promise.all([
+      fetch("/api/config"),
+      fetch("/api/config/mcp")
+    ]);
     const basic = await res1.json();
+    const mcp = await res2.json();
 
     settingProvider.value = basic.active_provider || "ollama";
     settingModel.value = basic.active_model || "llama3";
@@ -838,8 +844,6 @@ async function loadConfig() {
     currentProviderBadge.innerText = currentProvider;
     currentModelBadge.innerText = currentModel;
 
-    const res2 = await fetch("/api/config/mcp");
-    const mcp = await res2.json();
     settingMcpServers.value = JSON.stringify(mcp, null, 2);
   } catch (err) {
     console.error("설정을 불러오지 못했습니다:", err);

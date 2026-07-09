@@ -34,29 +34,30 @@ export async function listFiles(subDir: string = ""): Promise<FileItem[]> {
   
   try {
     const entries = await readdir(targetDir, { withFileTypes: true });
-    const items: FileItem[] = [];
     
-    for (const entry of entries) {
+    const itemPromises = entries.map(async (entry) => {
       const fullPath = join(targetDir, entry.name);
       const relativePath = relative(workspaceDir, fullPath);
       
       if (entry.isDirectory()) {
-        items.push({
+        return {
           name: entry.name,
           relativePath,
           isDir: true,
-        });
+        };
       } else {
         const stats = await stat(fullPath);
-        items.push({
+        return {
           name: entry.name,
           relativePath,
           isDir: false,
           size: stats.size,
           updatedAt: stats.mtime.toISOString(),
-        });
+        };
       }
-    }
+    });
+    
+    const items = await Promise.all(itemPromises);
     
     // Sort directories first, then files alphabetically
     return items.sort((a, b) => {

@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import { serveStatic } from "hono/bun";
+import { compress } from "hono/compress";
 import { streamText } from "hono/streaming";
 import {
   listConversations,
@@ -25,6 +26,9 @@ import { listAllMcpTools, callMcpTool, saveMcpServersConfig, getMcpServersConfig
 import { runAgentTask } from "./agent";
 
 const app = new Hono();
+
+// Enable Gzip/Deflate compression for all responses
+app.use("*", compress());
 
 // Serve static assets from public/ directory
 app.use("/*", serveStatic({ root: "./public" }));
