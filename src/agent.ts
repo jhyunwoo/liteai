@@ -264,7 +264,25 @@ async function callLLM(
   if (provider === "cloudflare") {
     return data.result?.response || "";
   } else if (provider === "gemini") {
-    return data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+    let text = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+    const chunks = data.candidates?.[0]?.groundingMetadata?.groundingChunks;
+    if (Array.isArray(chunks) && chunks.length > 0) {
+      const geminiSources = new Map<string, string>();
+      for (const chunk of chunks) {
+        const uri = chunk.web?.uri;
+        const title = chunk.web?.title || uri;
+        if (uri) {
+          geminiSources.set(uri, title);
+        }
+      }
+      if (geminiSources.size > 0) {
+        text += "\n\n**🌐 웹 검색 출처:**\n";
+        for (const [uri, title] of geminiSources.entries()) {
+          text += `- [${title}](${uri})\n`;
+        }
+      }
+    }
+    return text;
   } else {
     return data.choices?.[0]?.message?.content || "";
   }

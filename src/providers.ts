@@ -135,6 +135,7 @@ export async function streamChat(
 
   return new ReadableStream({
     async start(controller) {
+      const geminiSources = new Map<string, string>();
       try {
         while (true) {
           const { done, value } = await reader.read();
@@ -167,6 +168,16 @@ export async function streamChat(
                     const text = parsed.candidates?.[0]?.content?.parts?.[0]?.text;
                     if (text) {
                       controller.enqueue(text);
+                    }
+                    const chunks = parsed.candidates?.[0]?.groundingMetadata?.groundingChunks;
+                    if (Array.isArray(chunks)) {
+                      for (const chunk of chunks) {
+                        const uri = chunk.web?.uri;
+                        const title = chunk.web?.title || uri;
+                        if (uri) {
+                          geminiSources.set(uri, title);
+                        }
+                      }
                     }
                   } catch (e) {
                     // Ignore parse errors on incomplete JSON objects
@@ -238,6 +249,13 @@ export async function streamChat(
               } catch (e) {}
             }
           }
+        }
+        if (provider === "gemini" && geminiSources.size > 0) {
+          let sourcesText = "\n\n**🌐 웹 검색 출처:**\n";
+          for (const [uri, title] of geminiSources.entries()) {
+            sourcesText += `- [${title}](${uri})\n`;
+          }
+          controller.enqueue(sourcesText);
         }
         controller.close();
       } catch (err) {

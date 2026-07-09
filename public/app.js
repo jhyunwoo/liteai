@@ -439,6 +439,15 @@ function setupChatHandlers() {
   document.getElementById("quick-start-btn")?.addEventListener("click", () => {
     newChatBtn.click();
   });
+
+  // Open links in a new tab
+  chatMessages.addEventListener("click", (e) => {
+    const link = e.target.closest("a");
+    if (link) {
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+    }
+  });
 }
 
 async function loadConversations() {

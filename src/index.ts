@@ -13,6 +13,7 @@ import {
   addMessage,
   listSettings,
   setSetting,
+  getSetting,
   listAgentTasks,
   getAgentTask,
 } from "./db";
@@ -120,10 +121,11 @@ app.post("/api/chat", async (c) => {
       content: m.content,
     }));
 
+    let searchResults: any[] = [];
     // If web search toggle is enabled, perform grounding and enrich the final history entry
     if (webSearch) {
       try {
-        const searchResults = await searchWeb(message);
+        searchResults = await searchWeb(message);
         if (searchResults && searchResults.length > 0) {
           const searchContext = searchResults
             .map((r, i) => `[검색결과 ${i + 1}] 제목: ${r.title}\n출처: ${r.url}\n요약: ${r.snippet}`)
@@ -154,6 +156,15 @@ app.post("/api/chat", async (c) => {
           if (done) break;
           assistantMessage += value;
           await stream.write(value);
+        }
+
+        const isGeminiGrounding = conv.provider === "gemini" && getSetting("gemini_search_grounding") === "true";
+        if (webSearch && searchResults && searchResults.length > 0 && !isGeminiGrounding) {
+          const sourcesText = "\n\n**🌐 웹 검색 출처:**\n" + searchResults
+            .map((r) => `- [${r.title}](${r.url})`)
+            .join("\n");
+          assistantMessage += sourcesText;
+          await stream.write(sourcesText);
         }
       } catch (err: any) {
         console.error("Streaming error:", err);
