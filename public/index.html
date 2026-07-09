@@ -12,7 +12,10 @@
     <aside class="sidebar">
       <div class="sidebar-header">
         <h1 class="logo">Lite<span>AI</span></h1>
-        <button id="new-chat-btn" class="btn btn-primary btn-sm">+ 새 대화</button>
+        <div style="display: flex; gap: 8px; align-items: center;">
+          <button id="new-chat-btn" class="btn btn-primary btn-sm">+ 새 대화</button>
+          <button id="logout-btn" class="btn btn-outline btn-xs" style="padding: 4px 8px; border-color: var(--border-color); color: var(--text-muted); cursor: pointer; display: none;">로그아웃</button>
+        </div>
       </div>
 
       <nav class="sidebar-nav">
@@ -319,6 +322,27 @@
         </div>
       </div>
     </main>
+  </div>
+
+  <!-- 로그인 / 설정 오버레이 -->
+  <div id="auth-overlay" class="auth-overlay">
+    <div class="auth-card">
+      <h2 id="auth-title">LiteAI 로그인</h2>
+      <p id="auth-subtitle">계정 정보를 입력하여 접근하세요.</p>
+      
+      <form id="auth-form-el">
+        <div class="auth-form-group">
+          <label for="auth-username">아이디 (ID)</label>
+          <input type="text" id="auth-username" required placeholder="아이디 입력">
+        </div>
+        <div class="auth-form-group">
+          <label for="auth-password">비밀번호 (Password)</label>
+          <input type="password" id="auth-password" required placeholder="비밀번호 입력">
+        </div>
+        <div id="auth-error" class="auth-error-msg" style="display: none;"></div>
+        <button type="submit" id="auth-submit-btn" class="btn btn-primary btn-block">로그인</button>
+      </form>
+    </div>
   </div>
 
   <!-- 스크립트 연결 -->

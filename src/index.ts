@@ -16,7 +16,14 @@ import {
   getSetting,
   listAgentTasks,
   getAgentTask,
+  getUsersCount,
+  createUser,
+  getUser,
+  createSession,
+  getSession,
+  deleteSession,
 } from "./db";
+import { getCookie, setCookie, deleteCookie } from "hono/cookie";
 import { streamChat } from "./providers";
 import {
   listFiles,
@@ -36,6 +43,128 @@ app.use("*", compress());
 
 // Serve static assets from public/ directory
 app.use("/*", serveStatic({ root: "./public" }));
+
+// Authentication Middleware
+app.use("/api/*", async (c, next) => {
+  const path = c.req.path;
+  // Exclude auth endpoints from session validation
+  if (path.startsWith("/api/auth/")) {
+    await next();
+    return;
+  }
+
+  const sessionToken = getCookie(c, "session_token");
+  if (!sessionToken) {
+    return c.json({ error: "Unauthorized: Session token missing" }, 401);
+  }
+
+  const session = getSession(sessionToken);
+  if (!session) {
+    return c.json({ error: "Unauthorized: Session expired or invalid" }, 401);
+  }
+
+  // Set context variables
+  c.set("username", session.username);
+  await next();
+});
+
+// Authentication API Endpoints
+app.get("/api/auth/status", (c) => {
+  try {
+    const usersCount = getUsersCount();
+    if (usersCount === 0) {
+      return c.json({ loggedIn: false, setupRequired: true });
+    }
+    const sessionToken = getCookie(c, "session_token");
+    if (!sessionToken) {
+      return c.json({ loggedIn: false, setupRequired: false });
+    }
+    const session = getSession(sessionToken);
+    if (!session) {
+      return c.json({ loggedIn: false, setupRequired: false });
+    }
+    return c.json({ loggedIn: true, username: session.username, setupRequired: false });
+  } catch (err: any) {
+    return c.json({ error: err.message }, 500);
+  }
+});
+
+app.post("/api/auth/setup", async (c) => {
+  try {
+    const usersCount = getUsersCount();
+    if (usersCount > 0) {
+      return c.json({ error: "Administrator account already exists" }, 400);
+    }
+    const { username, password } = await c.req.json();
+    if (!username || !password || username.trim().length < 3 || password.length < 6) {
+      return c.json({ error: "Username must be at least 3 chars and password at least 6 chars." }, 400);
+    }
+    
+    const passwordHash = await Bun.password.hash(password);
+    createUser(username.trim(), passwordHash);
+    
+    // Auto-login after setup
+    const token = crypto.randomUUID();
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
+    createSession(token, username.trim(), expiresAt);
+    
+    setCookie(c, "session_token", token, {
+      httpOnly: true,
+      secure: false,
+      path: "/",
+      expires: expiresAt,
+      sameSite: "Lax",
+    });
+    
+    return c.json({ success: true, username: username.trim() });
+  } catch (err: any) {
+    return c.json({ error: err.message }, 500);
+  }
+});
+
+app.post("/api/auth/login", async (c) => {
+  try {
+    const { username, password } = await c.req.json();
+    if (!username || !password) {
+      return c.json({ error: "Username and password are required" }, 400);
+    }
+    
+    const user = getUser(username.trim());
+    if (!user) {
+      return c.json({ error: "Invalid username or password" }, 401);
+    }
+    
+    const isMatch = await Bun.password.verify(password, user.password_hash);
+    if (!isMatch) {
+      return c.json({ error: "Invalid username or password" }, 401);
+    }
+    
+    const token = crypto.randomUUID();
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
+    createSession(token, username.trim(), expiresAt);
+    
+    setCookie(c, "session_token", token, {
+      httpOnly: true,
+      secure: false,
+      path: "/",
+      expires: expiresAt,
+      sameSite: "Lax",
+    });
+    
+    return c.json({ success: true, username: user.username });
+  } catch (err: any) {
+    return c.json({ error: err.message }, 500);
+  }
+});
+
+app.post("/api/auth/logout", (c) => {
+  const sessionToken = getCookie(c, "session_token");
+  if (sessionToken) {
+    deleteSession(sessionToken);
+  }
+  deleteCookie(c, "session_token");
+  return c.json({ success: true });
+});
 
 // 1. Conversations API
 app.get("/api/conversations", (c) => {

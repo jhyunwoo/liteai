@@ -39,6 +39,23 @@ db.run(`
 `);
 
 db.run(`
+  CREATE TABLE IF NOT EXISTS users (
+    username TEXT PRIMARY KEY,
+    password_hash TEXT NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
+`);
+
+db.run(`
+  CREATE TABLE IF NOT EXISTS sessions (
+    token TEXT PRIMARY KEY,
+    username TEXT NOT NULL,
+    expires_at DATETIME NOT NULL,
+    FOREIGN KEY (username) REFERENCES users(username) ON DELETE CASCADE
+  );
+`);
+
+db.run(`
   CREATE TABLE IF NOT EXISTS agent_tasks (
     id TEXT PRIMARY KEY,
     description TEXT NOT NULL,
@@ -210,6 +227,62 @@ export function updateAgentTask(
     "UPDATE agent_tasks SET status = ?, logs = ? WHERE id = ?",
     [status, logs, id]
   );
+}
+
+// User and Session helper functions
+export interface User {
+  username: string;
+  password_hash: string;
+  created_at: string;
+}
+
+export interface Session {
+  token: string;
+  username: string;
+  expires_at: string;
+}
+
+export function getUsersCount(): number {
+  const query = db.query<{"COUNT(*)": number}, []>("SELECT COUNT(*) FROM users");
+  const res = query.get();
+  return res ? res["COUNT(*)"] : 0;
+}
+
+export function createUser(username: string, passwordHash: string): void {
+  db.run(
+    "INSERT INTO users (username, password_hash) VALUES (?, ?)",
+    [username, passwordHash]
+  );
+}
+
+export function getUser(username: string): User | null {
+  const query = db.query<User, [string]>("SELECT * FROM users WHERE username = ?");
+  return query.get(username);
+}
+
+export function createSession(token: string, username: string, expiresAt: Date): void {
+  db.run(
+    "INSERT INTO sessions (token, username, expires_at) VALUES (?, ?, ?)",
+    [token, username, expiresAt.toISOString()]
+  );
+}
+
+export function getSession(token: string): Session | null {
+  const query = db.query<Session, [string]>("SELECT * FROM sessions WHERE token = ?");
+  const session = query.get(token);
+  if (!session) return null;
+  
+  // Check if session has expired
+  if (new Date(session.expires_at).getTime() < Date.now()) {
+    deleteSession(token);
+    return null;
+  }
+  
+  return session;
+}
+
+export function deleteSession(token: string): void {
+  db.run("DELETE FROM sessions WHERE token = ?", [token]);
 }
 
 export { db };

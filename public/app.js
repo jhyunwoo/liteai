@@ -34,6 +34,12 @@ window.fetch = async function (resource, options) {
 
   try {
     const response = await originalFetch(resource, options);
+    if (response.status === 401) {
+      const url = typeof resource === "string" ? resource : (resource?.url || "");
+      if (!url.includes("/api/auth/")) {
+        showAuthOverlay(false);
+      }
+    }
     const clonedResponse = response.clone();
     const contentType = response.headers.get("content-type") || "";
     const isStream = contentType.includes("text/event-stream") || 
@@ -92,6 +98,7 @@ let currentProvider = "ollama";
 let currentModel = "llama3";
 let activeAgentTaskId = null;
 let agentPollInterval = null;
+let isSetupMode = false;
 
 // DOM Elements
 const sidebarTabs = document.querySelectorAll(".nav-tab");
@@ -104,6 +111,7 @@ const chatInput = document.getElementById("chat-input");
 const chatForm = document.getElementById("chat-form");
 const sendBtn = document.getElementById("send-btn");
 const newChatBtn = document.getElementById("new-chat-btn");
+const logoutBtn = document.getElementById("logout-btn");
 const deleteChatBtn = document.getElementById("delete-chat-btn");
 const chatTitle = document.getElementById("chat-title");
 const chatModelInfo = document.getElementById("chat-model-info");
@@ -150,6 +158,15 @@ const settingSerperKey = document.getElementById("setting-serper-key");
 const settingSearxngUrl = document.getElementById("setting-searxng-url");
 const settingMcpServers = document.getElementById("setting-mcp-servers");
 
+const authOverlay = document.getElementById("auth-overlay");
+const authTitle = document.getElementById("auth-title");
+const authSubtitle = document.getElementById("auth-subtitle");
+const authFormEl = document.getElementById("auth-form-el");
+const authUsernameInput = document.getElementById("auth-username");
+const authPasswordInput = document.getElementById("auth-password");
+const authErrorMsg = document.getElementById("auth-error");
+const authSubmitBtn = document.getElementById("auth-submit-btn");
+
 const currentProviderBadge = document.getElementById("current-provider-badge");
 const currentModelBadge = document.getElementById("current-model-badge");
 
@@ -160,6 +177,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   setupFileHandlers();
   setupConfigHandlers();
   setupAgentHandlers();
+  setupAuthHandlers();
 
   // Reset button event listener
   document.getElementById("reset-data-btn")?.addEventListener("click", (e) => {
@@ -171,13 +189,16 @@ document.addEventListener("DOMContentLoaded", async () => {
   });
   updateDataUsageDisplay();
 
-  // Load initial settings, conversations, files, and tasks concurrently to eliminate network waterfalls
-  await Promise.all([
-    loadConfig(),
-    loadConversations(),
-    loadFiles(),
-    loadAgentTasks()
-  ]);
+  // Check authentication first before loading application data
+  const authenticated = await checkAuthStatus();
+  if (authenticated) {
+    await Promise.all([
+      loadConfig(),
+      loadConversations(),
+      loadFiles(),
+      loadAgentTasks()
+    ]);
+  }
 
   // Hook up provider change listeners for settings model dropdown
   settingProvider.addEventListener("change", async () => {
@@ -1103,4 +1124,121 @@ function escapeHtml(text) {
     "'": "&#039;",
   };
   return String(text).replace(/[&<>"']/g, (m) => map[m]);
+}
+
+// --- Authentication UI & State Handlers ---
+async function checkAuthStatus() {
+  try {
+    const res = await originalFetch("/api/auth/status");
+    if (!res.ok) throw new Error("Auth status check failed");
+    
+    const data = await res.json();
+    if (data.loggedIn) {
+      authOverlay.classList.remove("active");
+      if (logoutBtn) logoutBtn.style.display = "block";
+      return true;
+    } else {
+      isSetupMode = !!data.setupRequired;
+      showAuthOverlay(isSetupMode);
+      return false;
+    }
+  } catch (err) {
+    console.error("Auth status check error:", err);
+    showAuthOverlay(false);
+    return false;
+  }
+}
+
+function showAuthOverlay(setupMode) {
+  isSetupMode = setupMode;
+  authOverlay.classList.add("active");
+  if (logoutBtn) logoutBtn.style.display = "none";
+  authErrorMsg.style.display = "none";
+  authUsernameInput.value = "";
+  authPasswordInput.value = "";
+  
+  if (setupMode) {
+    authTitle.innerText = "LiteAI 관리자 설정";
+    authSubtitle.innerText = "첫 접속입니다. 관리자 계정을 설정하여 시스템을 시작하세요.";
+    authSubmitBtn.innerText = "관리자 계정 생성";
+  } else {
+    authTitle.innerText = "LiteAI 로그인";
+    authSubtitle.innerText = "계정 정보를 입력하여 접근하세요.";
+    authSubmitBtn.innerText = "로그인";
+  }
+}
+
+function setupAuthHandlers() {
+  authFormEl.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const username = authUsernameInput.value.trim();
+    const password = authPasswordInput.value;
+    
+    authErrorMsg.style.display = "none";
+    authSubmitBtn.disabled = true;
+    authSubmitBtn.innerText = isSetupMode ? "생성 중..." : "로그인 중...";
+    
+    const endpoint = isSetupMode ? "/api/auth/setup" : "/api/auth/login";
+    try {
+      const res = await originalFetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password })
+      });
+      
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "처리 중 오류가 발생했습니다.");
+      }
+      
+      // Success! Hide overlay and reveal app
+      authOverlay.classList.remove("active");
+      if (logoutBtn) logoutBtn.style.display = "block";
+      
+      // Load app data
+      await Promise.all([
+        loadConfig(),
+        loadConversations(),
+        loadFiles(),
+        loadAgentTasks()
+      ]);
+    } catch (err) {
+      authErrorMsg.innerText = err.message;
+      authErrorMsg.style.display = "block";
+    } finally {
+      authSubmitBtn.disabled = false;
+      authSubmitBtn.innerText = isSetupMode ? "관리자 계정 생성" : "로그인";
+    }
+  });
+
+  logoutBtn.addEventListener("click", async () => {
+    if (!confirm("정말로 로그아웃 하시겠습니까?")) return;
+    try {
+      await originalFetch("/api/auth/logout", { method: "POST" });
+      
+      // Clear app state
+      currentConversationId = null;
+      activeEditorFile = null;
+      activeAgentTaskId = null;
+      if (agentPollInterval) clearInterval(agentPollInterval);
+      
+      chatMessages.innerHTML = `
+        <div class="welcome-screen">
+          <h3>저대역폭 모던 AI 채팅 서비스</h3>
+          <p>모든 메시지는 로컬 Bun SQLite 데이터베이스에 직접 저장됩니다. 텍스트 버퍼 전송을 최소화하고, Markdown 및 Code Editor 등 무거운 모듈은 클라이언트가 요청하는 즉시 CDN을 통해 비동기식으로 가져옵니다.</p>
+        </div>`;
+      chatTitle.innerText = "LiteAI 워크스페이스";
+      chatModelInfo.innerText = "새 대화를 개설하거나 기존 대화를 선택해 주세요.";
+      const selectorContainer = document.getElementById("chat-selector-container");
+      if (selectorContainer) selectorContainer.style.display = "none";
+      if (deleteChatBtn) deleteChatBtn.style.display = "none";
+      chatInput.disabled = true;
+      sendBtn.disabled = true;
+      
+      // Show login overlay
+      showAuthOverlay(false);
+    } catch (err) {
+      alert("로그아웃에 실패했습니다: " + err.message);
+    }
+  });
 }
