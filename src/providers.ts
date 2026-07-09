@@ -96,7 +96,7 @@ export async function streamChat(
     }
     
     if (getSetting("gemini_search_grounding") === "true") {
-      body.tools = [{ googleSearchRetrieval: {} }];
+      body.tools = [{ google_search: {} }];
     }
   } else if (provider === "openrouter") {
     const apiKey = getSetting("openrouter_api_key");
