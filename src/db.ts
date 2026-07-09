@@ -1,69 +1,91 @@
 import { Database } from "bun:sqlite";
 import { join } from "path";
 
-const dbPath = process.env.DATABASE_PATH || join(process.cwd(), "liteai.db");
-const db = new Database(dbPath);
+let dbInstance: Database | null = null;
+let currentDbPath = "";
 
-// Enable foreign keys
-db.run("PRAGMA foreign_keys = ON;");
+function getDb(): Database {
+  const envDbPath = process.env.DATABASE_PATH || join(process.cwd(), "liteai.db");
+  if (!dbInstance || envDbPath !== currentDbPath) {
+    if (dbInstance) {
+      try {
+        dbInstance.close();
+      } catch (e) {}
+    }
+    currentDbPath = envDbPath;
+    dbInstance = new Database(currentDbPath);
+    dbInstance.run("PRAGMA foreign_keys = ON;");
+    
+    dbInstance.run(`
+      CREATE TABLE IF NOT EXISTS conversations (
+        id TEXT PRIMARY KEY,
+        title TEXT NOT NULL,
+        model TEXT NOT NULL,
+        provider TEXT NOT NULL,
+        system_prompt TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+    
+    dbInstance.run(`
+      CREATE TABLE IF NOT EXISTS messages (
+        id TEXT PRIMARY KEY,
+        conversation_id TEXT NOT NULL,
+        role TEXT NOT NULL,
+        content TEXT NOT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (conversation_id) REFERENCES conversations(id) ON DELETE CASCADE
+      );
+    `);
+    
+    dbInstance.run(`
+      CREATE TABLE IF NOT EXISTS settings (
+        key TEXT PRIMARY KEY,
+        value TEXT NOT NULL
+      );
+    `);
+    
+    dbInstance.run(`
+      CREATE TABLE IF NOT EXISTS users (
+        username TEXT PRIMARY KEY,
+        password_hash TEXT NOT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+    
+    dbInstance.run(`
+      CREATE TABLE IF NOT EXISTS sessions (
+        token TEXT PRIMARY KEY,
+        username TEXT NOT NULL,
+        expires_at DATETIME NOT NULL,
+        FOREIGN KEY (username) REFERENCES users(username) ON DELETE CASCADE
+      );
+    `);
+    
+    dbInstance.run(`
+      CREATE TABLE IF NOT EXISTS agent_tasks (
+        id TEXT PRIMARY KEY,
+        description TEXT NOT NULL,
+        status TEXT NOT NULL,
+        logs TEXT NOT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+  }
+  return dbInstance;
+}
 
-// Initialize DB schema
-db.run(`
-  CREATE TABLE IF NOT EXISTS conversations (
-    id TEXT PRIMARY KEY,
-    title TEXT NOT NULL,
-    model TEXT NOT NULL,
-    provider TEXT NOT NULL,
-    system_prompt TEXT,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-  );
-`);
-
-db.run(`
-  CREATE TABLE IF NOT EXISTS messages (
-    id TEXT PRIMARY KEY,
-    conversation_id TEXT NOT NULL,
-    role TEXT NOT NULL,
-    content TEXT NOT NULL,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (conversation_id) REFERENCES conversations(id) ON DELETE CASCADE
-  );
-`);
-
-db.run(`
-  CREATE TABLE IF NOT EXISTS settings (
-    key TEXT PRIMARY KEY,
-    value TEXT NOT NULL
-  );
-`);
-
-db.run(`
-  CREATE TABLE IF NOT EXISTS users (
-    username TEXT PRIMARY KEY,
-    password_hash TEXT NOT NULL,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-  );
-`);
-
-db.run(`
-  CREATE TABLE IF NOT EXISTS sessions (
-    token TEXT PRIMARY KEY,
-    username TEXT NOT NULL,
-    expires_at DATETIME NOT NULL,
-    FOREIGN KEY (username) REFERENCES users(username) ON DELETE CASCADE
-  );
-`);
-
-db.run(`
-  CREATE TABLE IF NOT EXISTS agent_tasks (
-    id TEXT PRIMARY KEY,
-    description TEXT NOT NULL,
-    status TEXT NOT NULL,
-    logs TEXT NOT NULL,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-  );
-`);
+export const db = new Proxy({} as Database, {
+  get(target, prop, receiver) {
+    const activeDb = getDb();
+    const val = Reflect.get(activeDb, prop, receiver);
+    if (typeof val === "function") {
+      return val.bind(activeDb);
+    }
+    return val;
+  }
+});
 
 export interface Conversation {
   id: string;
@@ -284,5 +306,3 @@ export function getSession(token: string): Session | null {
 export function deleteSession(token: string): void {
   db.run("DELETE FROM sessions WHERE token = ?", [token]);
 }
-
-export { db };

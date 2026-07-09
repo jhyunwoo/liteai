@@ -1,4 +1,5 @@
 import { describe, expect, it, beforeAll, afterAll } from "bun:test";
+import server from "../src/index";
 import {
   db,
   createConversation,
@@ -82,6 +83,7 @@ describe("LiteAI Backend Engine Tests", () => {
       expect(() => resolveSafePath("../unsafe_file.txt")).toThrow();
       expect(() => resolveSafePath("/etc/passwd")).toThrow();
       expect(() => resolveSafePath("..")).toThrow();
+      expect(() => resolveSafePath("../liteai_workspace_test")).toThrow();
     });
 
     it("should successfully resolve safe paths inside workspace", () => {
@@ -106,6 +108,25 @@ describe("LiteAI Backend Engine Tests", () => {
       await deleteWorkspaceFile("tests");
       const listAfter = await listFiles("tests");
       expect(listAfter.length).toBe(0);
+    });
+  });
+
+  describe("API Server Security and Auth Bypass", () => {
+    it("should reject access to conversations API without session cookie", async () => {
+      const res = await server.fetch(new Request("http://localhost/api/conversations"));
+      expect(res.status).toBe(401);
+    });
+
+    it("should prevent auth bypass trick (/api/auth/../conversations)", async () => {
+      // In JS Request, URL resolves /../ automatically before fetch
+      // But we can construct a raw Request to test if the server handles raw paths or decodes.
+      // If we query '/api/auth/../conversations', JavaScript Request will resolve it to '/api/conversations'.
+      // However, we want to see if we send encoded traversal like '/api/auth/%2e%2e/conversations' or similar:
+      const res = await server.fetch(new Request("http://localhost/api/auth/%2e%2e/conversations"));
+      // If bypass is successful, it would bypass middleware because path.startsWith('/api/auth/') is true
+      // since the path string raw might start with /api/auth/ before normalisation or it might route to /api/conversations.
+      // Let's see what happens.
+      expect(res.status).toBe(401);
     });
   });
 });

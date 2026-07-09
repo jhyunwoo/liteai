@@ -155,6 +155,32 @@ export async function runAgentTask(taskId: string, description: string): Promise
 }
 
 async function executeLocalCommand(cmd: string): Promise<string> {
+  const trimmedCmd = cmd.trim().toLowerCase();
+  
+  // 1. Prevent command chaining to execute sudo or malicious system commands
+  const blockedKeywords = [
+    "sudo", "shutdown", "reboot", "poweroff", "init", "systemctl", "service",
+    "mkfs", "dd", "nc", "netcat", "ncat", "passwd", "shadow", "chown", "chmod"
+  ];
+  
+  for (const word of blockedKeywords) {
+    if (new RegExp(`\\b${word}\\b`).test(trimmedCmd)) {
+      throw new Error(`Security blocked: execution of command containing '${word}' is prohibited.`);
+    }
+  }
+
+  // 2. Prevent directory traversal and accessing sensitive system paths
+  if (cmd.includes("..") || cmd.includes("/etc/") || cmd.includes("/var/") || cmd.includes("/opt/")) {
+    throw new Error("Security blocked: directory traversal or system paths in command are prohibited.");
+  }
+
+  // 3. Destructive rm commands guard
+  if (trimmedCmd.includes("rm ")) {
+    if (trimmedCmd.includes("/") || trimmedCmd.includes("*")) {
+      throw new Error("Security blocked: destructive 'rm' commands with wildcards or absolute paths are prohibited.");
+    }
+  }
+
   const workspaceDir = join(process.cwd(), "liteai_workspace");
   const p = Bun.spawn({
     cmd: ["bash", "-c", cmd],

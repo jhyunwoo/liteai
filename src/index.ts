@@ -24,6 +24,7 @@ import {
   deleteSession,
 } from "./db";
 import { getCookie, setCookie, deleteCookie } from "hono/cookie";
+import { csrf } from "hono/csrf";
 import { streamChat } from "./providers";
 import {
   listFiles,
@@ -38,6 +39,11 @@ import { searchWeb } from "./search";
 
 const app = new Hono();
 
+// Enable CSRF protection
+if (process.env.NODE_ENV !== "test") {
+  app.use(csrf());
+}
+
 // Enable Gzip/Deflate compression for all responses
 app.use("*", compress());
 
@@ -47,8 +53,14 @@ app.use("/*", serveStatic({ root: "./public" }));
 // Authentication Middleware
 app.use("/api/*", async (c, next) => {
   const path = c.req.path;
-  // Exclude auth endpoints from session validation
-  if (path.startsWith("/api/auth/")) {
+  // Exclude explicit public auth endpoints from session validation
+  const publicPaths = [
+    "/api/auth/status",
+    "/api/auth/setup",
+    "/api/auth/login",
+    "/api/auth/logout"
+  ];
+  if (publicPaths.includes(path)) {
     await next();
     return;
   }
@@ -110,7 +122,7 @@ app.post("/api/auth/setup", async (c) => {
     
     setCookie(c, "session_token", token, {
       httpOnly: true,
-      secure: false,
+      secure: process.env.NODE_ENV === "production",
       path: "/",
       expires: expiresAt,
       sameSite: "Lax",
@@ -145,7 +157,7 @@ app.post("/api/auth/login", async (c) => {
     
     setCookie(c, "session_token", token, {
       httpOnly: true,
-      secure: false,
+      secure: process.env.NODE_ENV === "production",
       path: "/",
       expires: expiresAt,
       sameSite: "Lax",

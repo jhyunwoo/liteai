@@ -1,10 +1,13 @@
 import { mkdir, readdir, readFile, writeFile, rm, stat } from "fs/promises";
-import { join, resolve, relative } from "path";
+import { join, resolve, relative, sep } from "path";
 import { existsSync } from "fs";
 
-const workspaceDir = resolve(process.cwd(), process.env.WORKSPACE_PATH || "liteai_workspace");
+export function getWorkspaceDir(): string {
+  return resolve(process.cwd(), process.env.WORKSPACE_PATH || "liteai_workspace");
+}
 
 export async function ensureWorkspaceExists(): Promise<void> {
+  const workspaceDir = getWorkspaceDir();
   if (!existsSync(workspaceDir)) {
     await mkdir(workspaceDir, { recursive: true });
   }
@@ -12,9 +15,11 @@ export async function ensureWorkspaceExists(): Promise<void> {
 
 // Security function to prevent path traversal
 export function resolveSafePath(relativePath: string): string {
+  const workspaceDir = getWorkspaceDir();
   const resolved = resolve(workspaceDir, relativePath);
   
-  if (!resolved.startsWith(workspaceDir)) {
+  const safePrefix = workspaceDir.endsWith(sep) ? workspaceDir : workspaceDir + sep;
+  if (resolved !== workspaceDir && !resolved.startsWith(safePrefix)) {
     throw new Error("Access denied: path is outside the workspace directory.");
   }
   return resolved;
@@ -31,6 +36,7 @@ export interface FileItem {
 export async function listFiles(subDir: string = ""): Promise<FileItem[]> {
   await ensureWorkspaceExists();
   const targetDir = resolveSafePath(subDir);
+  const workspaceDir = getWorkspaceDir();
   
   try {
     const entries = await readdir(targetDir, { withFileTypes: true });

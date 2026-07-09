@@ -575,7 +575,8 @@ function appendMessage(role, content) {
 function renderMarkdownBubble(element, markdownText) {
   loadMarked(() => {
     if (window.marked) {
-      element.innerHTML = window.marked.parse(markdownText);
+      const parsedHtml = window.marked.parse(markdownText);
+      element.innerHTML = sanitizeHtml(parsedHtml);
     } else {
       element.innerText = markdownText;
     }
@@ -1120,6 +1121,54 @@ function escapeHtml(text) {
     "'": "&#039;",
   };
   return String(text).replace(/[&<>"']/g, (m) => map[m]);
+}
+
+function sanitizeHtml(html) {
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(html, "text/html");
+  
+  const allowedTags = new Set([
+    "a", "p", "br", "pre", "code", "ul", "ol", "li", "span", "div",
+    "h1", "h2", "h3", "h4", "h5", "h6", "blockquote", "strong", "em", "del",
+    "table", "thead", "tbody", "tr", "th", "td", "details", "summary", "img"
+  ]);
+
+  const allowedAttributes = new Set(["href", "src", "alt", "title", "class", "style", "target"]);
+
+  function cleanNode(node) {
+    if (node.nodeType === Node.ELEMENT_NODE) {
+      const tagName = node.tagName.toLowerCase();
+      
+      if (!allowedTags.has(tagName)) {
+        node.parentNode.removeChild(node);
+        return;
+      }
+      
+      const attrs = Array.from(node.attributes);
+      for (const attr of attrs) {
+        const attrName = attr.name.toLowerCase();
+        if (attrName === "href" || attrName === "src") {
+          const val = attr.value.trim().toLowerCase();
+          if (val.startsWith("javascript:") || val.startsWith("data:")) {
+            node.removeAttribute(attr.name);
+            continue;
+          }
+        }
+        
+        if (attrName.startsWith("on") || !allowedAttributes.has(attrName)) {
+          node.removeAttribute(attr.name);
+        }
+      }
+    }
+    
+    const children = Array.from(node.childNodes);
+    for (const child of children) {
+      cleanNode(child);
+    }
+  }
+  
+  cleanNode(doc.body);
+  return doc.body.innerHTML;
 }
 
 // --- Authentication UI & State Handlers ---
