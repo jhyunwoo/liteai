@@ -74,6 +74,42 @@ export async function streamChat(
       messages: apiMessages,
       stream: true,
     };
+  } else if (provider === "gemini") {
+    const apiKey = getSetting("gemini_api_key");
+    if (!apiKey) throw new Error("Gemini API key not set.");
+    url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:streamGenerateContent?key=${apiKey}`;
+    
+    const contents = apiMessages
+      .filter((m) => m.role !== "system")
+      .map((m) => ({
+        role: m.role === "assistant" ? "model" : "user",
+        parts: [{ text: m.content }],
+      }));
+    
+    body = { contents };
+    
+    const systemMsg = apiMessages.find((m) => m.role === "system")?.content;
+    if (systemMsg) {
+      body.systemInstruction = {
+        parts: [{ text: systemMsg }],
+      };
+    }
+    
+    if (getSetting("gemini_search_grounding") === "true") {
+      body.tools = [{ googleSearchRetrieval: {} }];
+    }
+  } else if (provider === "openrouter") {
+    const apiKey = getSetting("openrouter_api_key");
+    if (!apiKey) throw new Error("OpenRouter API key not set.");
+    url = "https://openrouter.ai/api/v1/chat/completions";
+    headers["Authorization"] = `Bearer ${apiKey}`;
+    headers["HTTP-Referer"] = "http://localhost:3000";
+    headers["X-Title"] = "LiteAI";
+    body = {
+      model,
+      messages: apiMessages,
+      stream: true,
+    };
   } else {
     throw new Error(`Unsupported provider: ${provider}`);
   }
@@ -106,50 +142,83 @@ export async function streamChat(
             break;
           }
           buffer += decoder.decode(value, { stream: true });
-          const lines = buffer.split("\n");
-          // Save the last partial line back to the buffer
-          buffer = lines.pop() || "";
 
-          for (const line of lines) {
-            const trimmed = line.trim();
-            if (!trimmed) continue;
+          if (provider === "gemini") {
+            let cleanBuffer = buffer.trim();
+            if (cleanBuffer.startsWith("[")) {
+              cleanBuffer = cleanBuffer.slice(1).trim();
+            }
+            if (cleanBuffer.startsWith(",")) {
+              cleanBuffer = cleanBuffer.slice(1).trim();
+            }
 
-            if (provider === "cloudflare") {
-              // Cloudflare streams send data: {"response": "chunk"} or data: [DONE]
-              if (trimmed.startsWith("data:")) {
-                const dataStr = trimmed.slice(5).trim();
-                if (dataStr === "[DONE]") continue;
-                try {
-                  const parsed = JSON.parse(dataStr);
-                  if (parsed.response) {
-                    controller.enqueue(parsed.response);
+            let braceCount = 0;
+            let startIdx = -1;
+            for (let i = 0; i < cleanBuffer.length; i++) {
+              if (cleanBuffer[i] === "{") {
+                if (braceCount === 0) startIdx = i;
+                braceCount++;
+              } else if (cleanBuffer[i] === "}") {
+                braceCount--;
+                if (braceCount === 0 && startIdx !== -1) {
+                  const jsonStr = cleanBuffer.slice(startIdx, i + 1);
+                  try {
+                    const parsed = JSON.parse(jsonStr);
+                    const text = parsed.candidates?.[0]?.content?.parts?.[0]?.text;
+                    if (text) {
+                      controller.enqueue(text);
+                    }
+                  } catch (e) {
+                    // Ignore parse errors on incomplete JSON objects
                   }
-                } catch (e) {
-                  // Ignore parse errors on individual stream lines
+                  buffer = cleanBuffer.slice(i + 1).trim();
+                  if (buffer.startsWith(",")) {
+                    buffer = buffer.slice(1).trim();
+                  }
+                  cleanBuffer = buffer;
+                  i = -1; // reset loop index
                 }
               }
-            } else {
-              // OpenAI SSE format (Groq, Cerebras, Ollama v1/chat/completions)
-              // data: {"choices": [{"delta": {"content": "..."}}]}
-              if (trimmed.startsWith("data:")) {
-                const dataStr = trimmed.slice(5).trim();
-                if (dataStr === "[DONE]") continue;
-                try {
-                  const parsed = JSON.parse(dataStr);
-                  const content = parsed.choices?.[0]?.delta?.content;
-                  if (content) {
-                    controller.enqueue(content);
-                  }
-                } catch (e) {
-                  // Ignore JSON parse errors for stream metadata lines
+            }
+          } else {
+            const lines = buffer.split("\n");
+            buffer = lines.pop() || "";
+
+            for (const line of lines) {
+              const trimmed = line.trim();
+              if (!trimmed) continue;
+
+              if (provider === "cloudflare") {
+                if (trimmed.startsWith("data:")) {
+                  const dataStr = trimmed.slice(5).trim();
+                  if (dataStr === "[DONE]") continue;
+                  try {
+                    const parsed = JSON.parse(dataStr);
+                    if (parsed.response) {
+                      controller.enqueue(parsed.response);
+                    }
+                  } catch (e) {}
+                }
+              } else {
+                // OpenAI SSE format (Groq, Cerebras, Ollama, OpenRouter)
+                if (trimmed.startsWith("data:")) {
+                  const dataStr = trimmed.slice(5).trim();
+                  if (dataStr === "[DONE]") continue;
+                  try {
+                    const parsed = JSON.parse(dataStr);
+                    const content = parsed.choices?.[0]?.delta?.content;
+                    if (content) {
+                      controller.enqueue(content);
+                    }
+                  } catch (e) {}
                 }
               }
             }
           }
         }
 
-        // Flush any remaining buffer
-        if (buffer.trim()) {
+        // Flush any remaining buffer (for non-gemini providers)
+        if (provider !== "gemini" && buffer.trim()) {
           const trimmed = buffer.trim();
           if (provider === "cloudflare" && trimmed.startsWith("data:")) {
             const dataStr = trimmed.slice(5).trim();

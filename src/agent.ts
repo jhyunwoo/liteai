@@ -209,6 +209,42 @@ async function callLLM(
     url = `https://api.cloudflare.com/client/v4/accounts/${accountId}/ai/run/${model}`;
     headers["Authorization"] = `Bearer ${apiToken}`;
     body = { messages: apiMessages, stream: false };
+  } else if (provider === "gemini") {
+    const apiKey = getSetting("gemini_api_key");
+    if (!apiKey) throw new Error("Gemini API key not set.");
+    url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+    
+    const contents = apiMessages
+      .filter((m) => m.role !== "system")
+      .map((m) => ({
+        role: m.role === "assistant" ? "model" : "user",
+        parts: [{ text: m.content }],
+      }));
+    
+    body = { contents };
+    
+    const systemMsg = apiMessages.find((m) => m.role === "system")?.content;
+    if (systemMsg) {
+      body.systemInstruction = {
+        parts: [{ text: systemMsg }],
+      };
+    }
+    
+    if (getSetting("gemini_search_grounding") === "true") {
+      body.tools = [{ googleSearchRetrieval: {} }];
+    }
+  } else if (provider === "openrouter") {
+    const apiKey = getSetting("openrouter_api_key");
+    if (!apiKey) throw new Error("OpenRouter API key not set.");
+    url = "https://openrouter.ai/api/v1/chat/completions";
+    headers["Authorization"] = `Bearer ${apiKey}`;
+    headers["HTTP-Referer"] = "http://localhost:3000";
+    headers["X-Title"] = "LiteAI";
+    body = {
+      model,
+      messages: apiMessages,
+      stream: false,
+    };
   } else {
     throw new Error(`Unsupported provider: ${provider}`);
   }
@@ -227,6 +263,8 @@ async function callLLM(
   const data: any = await response.json();
   if (provider === "cloudflare") {
     return data.result?.response || "";
+  } else if (provider === "gemini") {
+    return data.candidates?.[0]?.content?.parts?.[0]?.text || "";
   } else {
     return data.choices?.[0]?.message?.content || "";
   }

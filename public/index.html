@@ -182,6 +182,8 @@
               <label for="setting-provider">기본 AI 제공 플랫폼</label>
               <select id="setting-provider">
                 <option value="ollama">Ollama (로컬 인스턴스)</option>
+                <option value="gemini">Google Gemini API</option>
+                <option value="openrouter">OpenRouter API</option>
                 <option value="groq">Groq Cloud API</option>
                 <option value="cerebras">Cerebras AI API</option>
                 <option value="cloudflare">Cloudflare Workers AI</option>
@@ -222,6 +224,18 @@
             <div class="form-group">
               <label for="setting-cloudflare-token">Cloudflare API Token</label>
               <input type="password" id="setting-cloudflare-token" placeholder="Bearer 토큰">
+            </div>
+            <div class="form-group">
+              <label for="setting-gemini-key">Gemini API Key</label>
+              <input type="password" id="setting-gemini-key" placeholder="AIzaSy...">
+            </div>
+            <div class="form-group" style="display: flex; align-items: center; gap: 8px; margin-bottom: 16px;">
+              <input type="checkbox" id="setting-gemini-search" style="width: auto; cursor: pointer;">
+              <label for="setting-gemini-search" style="margin-bottom: 0; cursor: pointer; text-transform: none;">Gemini 구글 검색 Grounding 기능 활성화</label>
+            </div>
+            <div class="form-group">
+              <label for="setting-openrouter-key">OpenRouter API Key</label>
+              <input type="password" id="setting-openrouter-key" placeholder="sk-or-v1-...">
             </div>
           </div>
 

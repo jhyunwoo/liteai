@@ -139,6 +139,9 @@ const settingGroqKey = document.getElementById("setting-groq-key");
 const settingCerebrasKey = document.getElementById("setting-cerebras-key");
 const settingCloudflareAccount = document.getElementById("setting-cloudflare-account");
 const settingCloudflareToken = document.getElementById("setting-cloudflare-token");
+const settingGeminiKey = document.getElementById("setting-gemini-key");
+const settingGeminiSearch = document.getElementById("setting-gemini-search");
+const settingOpenRouterKey = document.getElementById("setting-openrouter-key");
 const settingSearchProvider = document.getElementById("setting-search-provider");
 const settingBraveKey = document.getElementById("setting-brave-key");
 const settingSearxngUrl = document.getElementById("setting-searxng-url");
@@ -755,6 +758,9 @@ function setupConfigHandlers() {
       cerebras_api_key: settingCerebrasKey.value.trim(),
       cloudflare_account_id: settingCloudflareAccount.value.trim(),
       cloudflare_api_token: settingCloudflareToken.value.trim(),
+      gemini_api_key: settingGeminiKey.value.trim(),
+      gemini_search_grounding: settingGeminiSearch.checked ? "true" : "false",
+      openrouter_api_key: settingOpenRouterKey.value.trim(),
       search_provider: settingSearchProvider.value,
       brave_search_key: settingBraveKey.value.trim(),
       searxng_url: settingSearxngUrl.value.trim(),
@@ -820,6 +826,9 @@ async function loadConfig() {
     settingCerebrasKey.value = basic.cerebras_api_key || "";
     settingCloudflareAccount.value = basic.cloudflare_account_id || "";
     settingCloudflareToken.value = basic.cloudflare_api_token || "";
+    settingGeminiKey.value = basic.gemini_api_key || "";
+    settingGeminiSearch.checked = basic.gemini_search_grounding === "true";
+    settingOpenRouterKey.value = basic.openrouter_api_key || "";
     settingSearchProvider.value = basic.search_provider || "duckduckgo";
     settingBraveKey.value = basic.brave_search_key || "";
     settingSearxngUrl.value = basic.searxng_url || "";
