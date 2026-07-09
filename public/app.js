@@ -176,6 +176,61 @@ document.addEventListener("DOMContentLoaded", async () => {
     loadFiles(),
     loadAgentTasks()
   ]);
+
+  // Hook up provider change listeners for dynamic model datalists
+  updateModelDatalist(settingProvider.value, "setting-model-list");
+  settingProvider.addEventListener("change", () => {
+    updateModelDatalist(settingProvider.value, "setting-model-list");
+    const presets = modelPresets[settingProvider.value] || [];
+    if (presets.length > 0) {
+      settingModel.value = presets[0];
+    }
+  });
+
+  const chatProviderSelect = document.getElementById("chat-provider-select");
+  const chatModelInput = document.getElementById("chat-model-input");
+  const chatModelUpdateBtn = document.getElementById("chat-model-update-btn");
+
+  if (chatProviderSelect) {
+    chatProviderSelect.addEventListener("change", () => {
+      updateModelDatalist(chatProviderSelect.value, "chat-model-list");
+      const presets = modelPresets[chatProviderSelect.value] || [];
+      if (presets.length > 0) {
+        chatModelInput.value = presets[0];
+      }
+    });
+  }
+
+  if (chatModelUpdateBtn) {
+    chatModelUpdateBtn.addEventListener("click", async () => {
+      if (!currentConversationId) return;
+      const provider = chatProviderSelect.value;
+      const model = chatModelInput.value.trim();
+      if (!model) {
+        alert("모델명을 입력해 주세요.");
+        return;
+      }
+      chatModelUpdateBtn.disabled = true;
+      chatModelUpdateBtn.innerText = "변경 중...";
+      try {
+        const response = await fetch(`/api/conversations/${currentConversationId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ provider, model }),
+        });
+        if (!response.ok) throw new Error(await response.text());
+        
+        chatModelInfo.innerText = `동작 플랫폼: ${provider} / 모델: ${model}`;
+        await loadConversations();
+        alert("대화 모델 정보가 정상적으로 변경되었습니다!");
+      } catch (err) {
+        alert("모델 변경에 실패했습니다: " + err.message);
+      } finally {
+        chatModelUpdateBtn.disabled = false;
+        chatModelUpdateBtn.innerText = "변경 적용";
+      }
+    });
+  }
 });
 
 // Dynamic Loader Helpers
@@ -343,6 +398,8 @@ function setupChatHandlers() {
       currentConversationId = null;
       chatTitle.innerText = "LiteAI 워크스페이스";
       chatModelInfo.innerText = "새 대화를 개설하거나 기존 대화를 선택해 주세요.";
+      const selectorContainer = document.getElementById("chat-selector-container");
+      if (selectorContainer) selectorContainer.style.display = "none";
       chatMessages.innerHTML = `
         <div class="welcome-screen">
           <h3>저대역폭 모던 AI 채팅 서비스</h3>
@@ -408,6 +465,22 @@ async function selectConversation(id) {
 
     chatTitle.innerText = conv.title;
     chatModelInfo.innerText = `동작 플랫폼: ${conv.provider} / 모델: ${conv.model}`;
+
+    // Populate and show quick selector toolbar
+    const selectorContainer = document.getElementById("chat-selector-container");
+    const chatProviderSelect = document.getElementById("chat-provider-select");
+    const chatModelInput = document.getElementById("chat-model-input");
+
+    if (selectorContainer) {
+      selectorContainer.style.display = "flex";
+    }
+    if (chatProviderSelect) {
+      chatProviderSelect.value = conv.provider;
+      updateModelDatalist(conv.provider, "chat-model-list");
+    }
+    if (chatModelInput) {
+      chatModelInput.value = conv.model;
+    }
 
     chatMessages.innerHTML = "";
     if (conv.messages.length === 0) {
@@ -849,9 +922,64 @@ async function loadConfig() {
     currentModelBadge.innerText = currentModel;
 
     settingMcpServers.value = JSON.stringify(mcp, null, 2);
+    // Populate settings model list
+    updateModelDatalist(settingProvider.value, "setting-model-list");
   } catch (err) {
     console.error("설정을 불러오지 못했습니다:", err);
   }
+}
+
+// Model presets dictionary for quick dropdown lookup
+const modelPresets = {
+  ollama: [
+    "llama3",
+    "llama3.1",
+    "llama3.2",
+    "gemma2",
+    "mistral",
+    "phi3",
+    "qwen2.5"
+  ],
+  gemini: [
+    "gemini-2.5-flash",
+    "gemini-2.5-pro",
+    "gemini-1.5-flash",
+    "gemini-1.5-pro"
+  ],
+  openrouter: [
+    "google/gemini-2.5-flash",
+    "meta-llama/llama-3.3-70b-instruct",
+    "anthropic/claude-3.5-sonnet",
+    "deepseek/deepseek-chat"
+  ],
+  groq: [
+    "llama-3.3-70b-versatile",
+    "llama-3.1-8b-instant",
+    "mixtral-8x7b-32768",
+    "gemma2-9b-it"
+  ],
+  cerebras: [
+    "llama3.1-8b",
+    "llama3.1-70b"
+  ],
+  cloudflare: [
+    "@cf/meta/llama-3.1-8b-instruct",
+    "@cf/meta/llama-3-8b-instruct",
+    "@cf/mistral/mistral-7b-instruct-v0.1",
+    "@cf/qwen/qwen1.5-7b-chat"
+  ]
+};
+
+function updateModelDatalist(provider, datalistId) {
+  const datalist = document.getElementById(datalistId);
+  if (!datalist) return;
+  datalist.innerHTML = "";
+  const models = modelPresets[provider] || [];
+  models.forEach((model) => {
+    const option = document.createElement("option");
+    option.value = model;
+    datalist.appendChild(option);
+  });
 }
 
 // Global UI Formatting utilities

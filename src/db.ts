@@ -114,6 +114,13 @@ export function updateConversationTitle(id: string, title: string): void {
   );
 }
 
+export function updateConversationSettings(id: string, provider: string, model: string): void {
+  db.run(
+    "UPDATE conversations SET provider = ?, model = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+    [provider, model, id]
+  );
+}
+
 export function deleteConversation(id: string): void {
   db.run("DELETE FROM conversations WHERE id = ?", [id]);
 }

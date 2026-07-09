@@ -92,10 +92,26 @@
     <main class="main-content">
       <!-- 1. 대화 인터페이스 -->
       <div id="view-chat" class="view-panel active">
-        <div class="view-header">
-          <div class="header-info">
+        <div class="view-header" style="flex-wrap: wrap; gap: 12px; padding: 16px 40px;">
+          <div class="header-info" style="flex: 1; min-width: 200px;">
             <h2 id="chat-title">LiteAI 워크스페이스</h2>
             <p id="chat-model-info" class="subtitle">새 대화를 개설하거나 기존 대화를 선택해 주세요.</p>
+            
+            <!-- Chat pane provider/model quick selector -->
+            <div id="chat-selector-container" style="display: none; align-items: center; gap: 8px; margin-top: 8px; flex-wrap: wrap;">
+              <span style="font-size: 0.72rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase;">플랫폼/모델:</span>
+              <select id="chat-provider-select" style="font-size: 0.75rem; padding: 4px 8px; border-radius: 4px; border: 1px solid var(--border-color); background: var(--bg-app); color: var(--text-main); cursor: pointer;">
+                <option value="ollama">Ollama</option>
+                <option value="gemini">Gemini</option>
+                <option value="openrouter">OpenRouter</option>
+                <option value="groq">Groq</option>
+                <option value="cerebras">Cerebras</option>
+                <option value="cloudflare">Cloudflare</option>
+              </select>
+              <input type="text" id="chat-model-input" list="chat-model-list" placeholder="모델명 입력" style="font-size: 0.75rem; padding: 4px 8px; border-radius: 4px; border: 1px solid var(--border-color); background: var(--bg-app); color: var(--text-main); width: 180px;">
+              <datalist id="chat-model-list"></datalist>
+              <button id="chat-model-update-btn" class="btn btn-secondary btn-xs" style="padding: 4px 8px; font-weight: 600;">변경 적용</button>
+            </div>
           </div>
           <button id="delete-chat-btn" class="btn btn-danger btn-icon" title="현재 대화 삭제" style="display: none;">
             🗑️
@@ -201,7 +217,8 @@
             </div>
             <div class="form-group">
               <label for="setting-model">동작 LLM 모델명</label>
-              <input type="text" id="setting-model" placeholder="예: llama3, llama-3.1-8b-instant, llama3.1-8b">
+              <input type="text" id="setting-model" list="setting-model-list" placeholder="예: llama3, llama-3.1-8b-instant, llama3.1-8b">
+              <datalist id="setting-model-list"></datalist>
             </div>
             <div class="form-group">
               <label for="setting-system-prompt">공통 시스템 프롬프트 (System Prompt)</label>

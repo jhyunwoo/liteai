@@ -6,6 +6,8 @@ import {
   listConversations,
   getConversation,
   createConversation,
+  updateConversationTitle,
+  updateConversationSettings,
   deleteConversation,
   getMessages,
   addMessage,
@@ -73,6 +75,26 @@ app.delete("/api/conversations/:id", (c) => {
   const id = c.req.param("id");
   try {
     deleteConversation(id);
+    return c.json({ success: true });
+  } catch (err: any) {
+    return c.json({ error: err.message }, 500);
+  }
+});
+
+app.patch("/api/conversations/:id", async (c) => {
+  const id = c.req.param("id");
+  try {
+    const { title, provider, model } = await c.req.json();
+    const conv = getConversation(id);
+    if (!conv) {
+      return c.json({ error: "Conversation not found" }, 404);
+    }
+    if (title !== undefined) {
+      updateConversationTitle(id, title);
+    }
+    if (provider !== undefined && model !== undefined) {
+      updateConversationSettings(id, provider, model);
+    }
     return c.json({ success: true });
   } catch (err: any) {
     return c.json({ error: err.message }, 500);
