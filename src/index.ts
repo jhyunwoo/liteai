@@ -24,6 +24,7 @@ import {
 } from "./files";
 import { listAllMcpTools, callMcpTool, saveMcpServersConfig, getMcpServersConfig } from "./mcp";
 import { runAgentTask } from "./agent";
+import { searchWeb } from "./search";
 
 const app = new Hono();
 
@@ -81,7 +82,7 @@ app.delete("/api/conversations/:id", (c) => {
 // 2. Chat Streaming API
 app.post("/api/chat", async (c) => {
   try {
-    const { conversationId, message } = await c.req.json();
+    const { conversationId, message, webSearch } = await c.req.json();
     const conv = getConversation(conversationId);
     if (!conv) {
       return c.json({ error: "Conversation not found" }, 404);
@@ -96,6 +97,24 @@ app.post("/api/chat", async (c) => {
       role: m.role,
       content: m.content,
     }));
+
+    // If web search toggle is enabled, perform grounding and enrich the final history entry
+    if (webSearch) {
+      try {
+        const searchResults = await searchWeb(message);
+        if (searchResults && searchResults.length > 0) {
+          const searchContext = searchResults
+            .map((r, i) => `[검색결과 ${i + 1}] 제목: ${r.title}\n출처: ${r.url}\n요약: ${r.snippet}`)
+            .join("\n\n");
+          
+          if (history.length > 0 && history[history.length - 1].role === "user") {
+            history[history.length - 1].content = `[실시간 웹 검색 결과]\n${searchContext}\n\n[사용자 질문]\n${message}`;
+          }
+        }
+      } catch (searchErr) {
+        console.error("Web search grounding failed:", searchErr);
+      }
+    }
 
     return streamText(c, async (stream) => {
       let assistantMessage = "";

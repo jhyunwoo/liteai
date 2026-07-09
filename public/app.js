@@ -266,6 +266,7 @@ function setupChatHandlers() {
         body: JSON.stringify({
           conversationId: currentConversationId,
           message: text,
+          webSearch: document.getElementById("chat-web-search-toggle")?.checked || false,
         }),
       });
 
