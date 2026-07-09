@@ -261,7 +261,7 @@ function loadMarked(callback) {
     return;
   }
   const script = document.createElement("script");
-  script.src = "https://cdn.jsdelivr.net/npm/marked/marked.min.js";
+  script.src = "/libs/marked.min.js";
   script.onload = () => {
     window.marked.setOptions({
       gfm: true,
@@ -278,10 +278,10 @@ function loadMonaco(callback) {
     return;
   }
   const script = document.createElement("script");
-  script.src = "https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js";
+  script.src = "/libs/require.min.js";
   script.onload = () => {
     require.config({
-      paths: { vs: "https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs" },
+      paths: { vs: "/libs/vs" },
     });
     require(["vs/editor/editor.main"], () => {
       callback();
