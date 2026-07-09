@@ -172,8 +172,8 @@ export async function streamChat(
                     const chunks = parsed.candidates?.[0]?.groundingMetadata?.groundingChunks;
                     if (Array.isArray(chunks)) {
                       for (const chunk of chunks) {
-                        const uri = chunk.web?.uri;
-                        const title = chunk.web?.title || uri;
+                        const uri = chunk?.web?.uri;
+                        const title = chunk?.web?.title || uri;
                         if (uri) {
                           geminiSources.set(uri, title);
                         }

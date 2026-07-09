@@ -269,8 +269,8 @@ async function callLLM(
     if (Array.isArray(chunks) && chunks.length > 0) {
       const geminiSources = new Map<string, string>();
       for (const chunk of chunks) {
-        const uri = chunk.web?.uri;
-        const title = chunk.web?.title || uri;
+        const uri = chunk?.web?.uri;
+        const title = chunk?.web?.title || uri;
         if (uri) {
           geminiSources.set(uri, title);
         }
