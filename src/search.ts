@@ -92,6 +92,47 @@ export async function searchWeb(query: string): Promise<SearchResult[]> {
       }
     }
     return results.slice(0, 5);
+  } else if (provider === "ollama") {
+    const ollamaUrl = getSetting("ollama_url") || "http://localhost:11434";
+    const apiKey = getSetting("ollama_api_key");
+    
+    let searchUrl = `${ollamaUrl.replace(/\/$/, "")}/api/web_search`;
+    if (apiKey && (!ollamaUrl || ollamaUrl.includes("localhost") || ollamaUrl.includes("127.0.0.1"))) {
+      searchUrl = "https://ollama.com/api/web_search";
+    }
+
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+    };
+    if (apiKey) {
+      headers["Authorization"] = `Bearer ${apiKey}`;
+    }
+
+    const response = await fetch(searchUrl, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({
+        query,
+        max_results: 5,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Ollama Search failed: ${response.statusText}`);
+    }
+
+    const data: any = await response.json();
+    const results: SearchResult[] = [];
+    if (data.results) {
+      for (const item of data.results) {
+        results.push({
+          title: item.title || "Ollama Search Result",
+          url: item.url || "",
+          snippet: item.content || item.snippet || "",
+        });
+      }
+    }
+    return results.slice(0, 5);
   } else {
     // DuckDuckGo fallback - fetch standard HTML search
     try {
