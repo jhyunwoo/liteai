@@ -621,5 +621,6 @@ app.post("/api/agent/tasks", async (c) => {
 // Export default object for Bun to run the server on port 3000
 export default {
   port: 3000,
+  idleTimeout: 255, // Increase idleTimeout from default 10s to 255s (max allowed) to prevent stream timeouts
   fetch: app.fetch,
 };
