@@ -131,7 +131,9 @@ const newAgentTaskBtn = document.getElementById("new-agent-task-btn");
 const saveConfigBtn = document.getElementById("save-config-btn");
 const configStatusMsg = document.getElementById("config-status-msg");
 const settingProvider = document.getElementById("setting-provider");
-const settingModel = document.getElementById("setting-model");
+const settingModelSelect = document.getElementById("setting-model-select");
+const settingModelCustom = document.getElementById("setting-model-custom");
+const settingModelCustomToggle = document.getElementById("setting-model-custom-toggle");
 const settingSystemPrompt = document.getElementById("setting-system-prompt");
 const settingOllamaUrl = document.getElementById("setting-ollama-url");
 const settingOllamaKey = document.getElementById("setting-ollama-key");
@@ -177,27 +179,43 @@ document.addEventListener("DOMContentLoaded", async () => {
     loadAgentTasks()
   ]);
 
-  // Hook up provider change listeners for dynamic model datalists
-  updateModelDatalist(settingProvider.value, "setting-model-list");
+  // Hook up provider change listeners for settings model dropdown
+  updateModelDatalist(settingProvider.value, "setting-model-select");
   settingProvider.addEventListener("change", () => {
-    updateModelDatalist(settingProvider.value, "setting-model-list");
+    updateModelDatalist(settingProvider.value, "setting-model-select");
     const presets = modelPresets[settingProvider.value] || [];
     if (presets.length > 0) {
-      settingModel.value = presets[0];
+      settingModelSelect.value = presets[0];
     }
   });
 
+  settingModelCustomToggle.addEventListener("change", () => {
+    const isCustom = settingModelCustomToggle.checked;
+    settingModelSelect.style.display = isCustom ? "none" : "block";
+    settingModelCustom.style.display = isCustom ? "block" : "none";
+  });
+
   const chatProviderSelect = document.getElementById("chat-provider-select");
-  const chatModelInput = document.getElementById("chat-model-input");
+  const chatModelSelect = document.getElementById("chat-model-select");
+  const chatModelCustom = document.getElementById("chat-model-custom");
+  const chatModelCustomToggle = document.getElementById("chat-model-custom-toggle");
   const chatModelUpdateBtn = document.getElementById("chat-model-update-btn");
 
   if (chatProviderSelect) {
     chatProviderSelect.addEventListener("change", () => {
-      updateModelDatalist(chatProviderSelect.value, "chat-model-list");
+      updateModelDatalist(chatProviderSelect.value, "chat-model-select");
       const presets = modelPresets[chatProviderSelect.value] || [];
-      if (presets.length > 0) {
-        chatModelInput.value = presets[0];
+      if (presets.length > 0 && chatModelSelect) {
+        chatModelSelect.value = presets[0];
       }
+    });
+  }
+
+  if (chatModelCustomToggle) {
+    chatModelCustomToggle.addEventListener("change", () => {
+      const isCustom = chatModelCustomToggle.checked;
+      if (chatModelSelect) chatModelSelect.style.display = isCustom ? "none" : "block";
+      if (chatModelCustom) chatModelCustom.style.display = isCustom ? "block" : "none";
     });
   }
 
@@ -205,11 +223,15 @@ document.addEventListener("DOMContentLoaded", async () => {
     chatModelUpdateBtn.addEventListener("click", async () => {
       if (!currentConversationId) return;
       const provider = chatProviderSelect.value;
-      const model = chatModelInput.value.trim();
+      const model = chatModelCustomToggle.checked
+        ? chatModelCustom.value.trim()
+        : (chatModelSelect ? chatModelSelect.value : "");
+
       if (!model) {
-        alert("모델명을 입력해 주세요.");
+        alert("모델명을 선택하거나 직접 입력해 주세요.");
         return;
       }
+
       chatModelUpdateBtn.disabled = true;
       chatModelUpdateBtn.innerText = "변경 중...";
       try {
@@ -469,17 +491,31 @@ async function selectConversation(id) {
     // Populate and show quick selector toolbar
     const selectorContainer = document.getElementById("chat-selector-container");
     const chatProviderSelect = document.getElementById("chat-provider-select");
-    const chatModelInput = document.getElementById("chat-model-input");
+    const chatModelSelect = document.getElementById("chat-model-select");
+    const chatModelCustom = document.getElementById("chat-model-custom");
+    const chatModelCustomToggle = document.getElementById("chat-model-custom-toggle");
 
     if (selectorContainer) {
       selectorContainer.style.display = "flex";
     }
     if (chatProviderSelect) {
       chatProviderSelect.value = conv.provider;
-      updateModelDatalist(conv.provider, "chat-model-list");
+      updateModelDatalist(conv.provider, "chat-model-select");
     }
-    if (chatModelInput) {
-      chatModelInput.value = conv.model;
+
+    const presets = modelPresets[conv.provider] || [];
+    const isCustom = !presets.includes(conv.model);
+
+    if (chatModelCustomToggle) {
+      chatModelCustomToggle.checked = isCustom;
+    }
+    if (chatModelSelect) {
+      chatModelSelect.style.display = isCustom ? "none" : "block";
+      if (!isCustom) chatModelSelect.value = conv.model;
+    }
+    if (chatModelCustom) {
+      chatModelCustom.style.display = isCustom ? "block" : "none";
+      chatModelCustom.value = conv.model;
     }
 
     chatMessages.innerHTML = "";
@@ -825,9 +861,13 @@ function setupConfigHandlers() {
     saveConfigBtn.innerText = "설정 저장 중...";
     configStatusMsg.innerText = "";
 
+    const activeModelVal = settingModelCustomToggle.checked
+      ? settingModelCustom.value.trim()
+      : settingModelSelect.value;
+
     const basicConfig = {
       active_provider: settingProvider.value,
-      active_model: settingModel.value.trim(),
+      active_model: activeModelVal,
       default_system_prompt: settingSystemPrompt.value.trim(),
       ollama_url: settingOllamaUrl.value.trim(),
       ollama_api_key: settingOllamaKey.value.trim(),
@@ -899,8 +939,25 @@ async function loadConfig() {
     const basic = await res1.json();
     const mcp = await res2.json();
 
-    settingProvider.value = basic.active_provider || "ollama";
-    settingModel.value = basic.active_model || "llama3";
+    const activeProvider = basic.active_provider || "ollama";
+    const activeModel = basic.active_model || "llama3";
+
+    settingProvider.value = activeProvider;
+    
+    // Check if the loaded model matches a preset
+    updateModelDatalist(activeProvider, "setting-model-select");
+    const presets = modelPresets[activeProvider] || [];
+    const isCustom = !presets.includes(activeModel);
+
+    settingModelCustomToggle.checked = isCustom;
+    settingModelSelect.style.display = isCustom ? "none" : "block";
+    settingModelCustom.style.display = isCustom ? "block" : "none";
+
+    if (!isCustom) {
+      settingModelSelect.value = activeModel;
+    }
+    settingModelCustom.value = activeModel;
+
     settingSystemPrompt.value = basic.default_system_prompt || "";
     settingOllamaUrl.value = basic.ollama_url || "http://localhost:11434";
     settingOllamaKey.value = basic.ollama_api_key || "";
@@ -916,14 +973,12 @@ async function loadConfig() {
     settingSerperKey.value = basic.serper_api_key || "";
     settingSearxngUrl.value = basic.searxng_url || "";
 
-    currentProvider = settingProvider.value;
-    currentModel = settingModel.value;
+    currentProvider = activeProvider;
+    currentModel = activeModel;
     currentProviderBadge.innerText = currentProvider;
     currentModelBadge.innerText = currentModel;
 
     settingMcpServers.value = JSON.stringify(mcp, null, 2);
-    // Populate settings model list
-    updateModelDatalist(settingProvider.value, "setting-model-list");
   } catch (err) {
     console.error("설정을 불러오지 못했습니다:", err);
   }
@@ -970,15 +1025,16 @@ const modelPresets = {
   ]
 };
 
-function updateModelDatalist(provider, datalistId) {
-  const datalist = document.getElementById(datalistId);
-  if (!datalist) return;
-  datalist.innerHTML = "";
+function updateModelDatalist(provider, selectId) {
+  const selectEl = document.getElementById(selectId);
+  if (!selectEl) return;
+  selectEl.innerHTML = "";
   const models = modelPresets[provider] || [];
   models.forEach((model) => {
     const option = document.createElement("option");
     option.value = model;
-    datalist.appendChild(option);
+    option.innerText = model;
+    selectEl.appendChild(option);
   });
 }
 
