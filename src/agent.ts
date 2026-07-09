@@ -276,10 +276,11 @@ async function callLLM(
         }
       }
       if (geminiSources.size > 0) {
-        text += "\n\n**🌐 웹 검색 출처:**\n";
+        text += "\n\n<details>\n<summary>🌐 웹 검색 출처 보기 (클릭하여 펼치기)</summary>\n\n";
         for (const [uri, title] of geminiSources.entries()) {
           text += `- [${title}](${uri})\n`;
         }
+        text += "</details>";
       }
     }
     return text;

@@ -251,10 +251,11 @@ export async function streamChat(
           }
         }
         if (provider === "gemini" && geminiSources.size > 0) {
-          let sourcesText = "\n\n**🌐 웹 검색 출처:**\n";
+          let sourcesText = "\n\n<details>\n<summary>🌐 웹 검색 출처 보기 (클릭하여 펼치기)</summary>\n\n";
           for (const [uri, title] of geminiSources.entries()) {
             sourcesText += `- [${title}](${uri})\n`;
           }
+          sourcesText += "</details>";
           controller.enqueue(sourcesText);
         }
         controller.close();

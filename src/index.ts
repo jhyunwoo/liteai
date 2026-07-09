@@ -289,9 +289,9 @@ app.post("/api/chat", async (c) => {
 
         const isGeminiGrounding = conv.provider === "gemini" && getSetting("gemini_search_grounding") === "true";
         if (webSearch && searchResults && searchResults.length > 0 && !isGeminiGrounding) {
-          const sourcesText = "\n\n**🌐 웹 검색 출처:**\n" + searchResults
+          const sourcesText = "\n\n<details>\n<summary>🌐 웹 검색 출처 보기 (클릭하여 펼치기)</summary>\n\n" + searchResults
             .map((r) => `- [${r.title}](${r.url})`)
-            .join("\n");
+            .join("\n") + "\n</details>";
           assistantMessage += sourcesText;
           await stream.write(sourcesText);
         }
