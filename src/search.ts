@@ -40,6 +40,34 @@ export async function searchWeb(query: string): Promise<SearchResult[]> {
       }
     }
     return results.slice(0, 5);
+  } else if (provider === "serper") {
+    const apiKey = getSetting("serper_api_key");
+    if (!apiKey) {
+      throw new Error("Serper API key not set.");
+    }
+    const response = await fetch("https://google.serper.dev/search", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-API-KEY": apiKey,
+      },
+      body: JSON.stringify({ q: query }),
+    });
+    if (!response.ok) {
+      throw new Error(`Serper search failed: ${response.statusText}`);
+    }
+    const data: any = await response.json();
+    const results: SearchResult[] = [];
+    if (data.organic) {
+      for (const item of data.organic) {
+        results.push({
+          title: item.title,
+          url: item.link,
+          snippet: item.snippet || "",
+        });
+      }
+    }
+    return results.slice(0, 5);
   } else if (provider === "searxng") {
     const url = getSetting("searxng_url");
     if (!url) {

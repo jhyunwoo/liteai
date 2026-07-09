@@ -251,6 +251,7 @@
               <label for="setting-search-provider">기본 검색 엔진</label>
               <select id="setting-search-provider">
                 <option value="duckduckgo">DuckDuckGo (무료 크롤러, API Key 없음)</option>
+                <option value="serper">Serper.dev (Google Search API)</option>
                 <option value="brave">Brave Search API</option>
                 <option value="searxng">SearXNG 메타 검색 허브</option>
               </select>
@@ -258,6 +259,10 @@
             <div class="form-group">
               <label for="setting-brave-key">Brave Search API Key</label>
               <input type="password" id="setting-brave-key">
+            </div>
+            <div class="form-group">
+              <label for="setting-serper-key">Serper API Key</label>
+              <input type="password" id="setting-serper-key" placeholder="api_key_...">
             </div>
             <div class="form-group">
               <label for="setting-searxng-url">SearXNG 호스트 URL</label>

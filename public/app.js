@@ -144,6 +144,7 @@ const settingGeminiSearch = document.getElementById("setting-gemini-search");
 const settingOpenRouterKey = document.getElementById("setting-openrouter-key");
 const settingSearchProvider = document.getElementById("setting-search-provider");
 const settingBraveKey = document.getElementById("setting-brave-key");
+const settingSerperKey = document.getElementById("setting-serper-key");
 const settingSearxngUrl = document.getElementById("setting-searxng-url");
 const settingMcpServers = document.getElementById("setting-mcp-servers");
 
@@ -766,6 +767,7 @@ function setupConfigHandlers() {
       openrouter_api_key: settingOpenRouterKey.value.trim(),
       search_provider: settingSearchProvider.value,
       brave_search_key: settingBraveKey.value.trim(),
+      serper_api_key: settingSerperKey.value.trim(),
       searxng_url: settingSearxngUrl.value.trim(),
     };
 
@@ -838,6 +840,7 @@ async function loadConfig() {
     settingOpenRouterKey.value = basic.openrouter_api_key || "";
     settingSearchProvider.value = basic.search_provider || "duckduckgo";
     settingBraveKey.value = basic.brave_search_key || "";
+    settingSerperKey.value = basic.serper_api_key || "";
     settingSearxngUrl.value = basic.searxng_url || "";
 
     currentProvider = settingProvider.value;
