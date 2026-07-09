@@ -17,7 +17,44 @@ function addBytes(bytes) {
   updateDataUsageDisplay();
 }
 
-// Monkey-patch window.fetch to track data usage globally
+// Track initial page navigation and resource downloads
+function trackInitialPerformance() {
+  // Navigation entry (the initial HTML document)
+  const navEntries = performance.getEntriesByType("navigation");
+  for (const entry of navEntries) {
+    const size = entry.transferSize || entry.encodedBodySize || entry.decodedBodySize || 0;
+    addBytes(size);
+  }
+
+  // Resource entries (stylesheets, scripts, images, etc. loaded before this script ran)
+  const resourceEntries = performance.getEntriesByType("resource");
+  for (const entry of resourceEntries) {
+    const size = entry.transferSize || entry.encodedBodySize || entry.decodedBodySize || 0;
+    addBytes(size);
+  }
+}
+
+// Setup PerformanceObserver to dynamically observe all resource downloads
+function setupPerformanceObserver() {
+  try {
+    const observer = new PerformanceObserver((list) => {
+      const entries = list.getEntries();
+      for (const entry of entries) {
+        const size = entry.transferSize || entry.encodedBodySize || entry.decodedBodySize || 0;
+        addBytes(size);
+      }
+    });
+    observer.observe({ entryTypes: ["resource"] });
+  } catch (e) {
+    console.error("PerformanceObserver not supported or failed to start:", e);
+  }
+}
+
+// Start tracking immediately
+trackInitialPerformance();
+setupPerformanceObserver();
+
+// Monkey-patch window.fetch to track UPLOAD data usage and handle auth globally
 const originalFetch = window.fetch;
 window.fetch = async function (resource, options) {
   let uploadBytes = 0;
@@ -29,7 +66,10 @@ window.fetch = async function (resource, options) {
       uploadBytes = options.body.size;
     }
   }
-  uploadBytes += 200; // estimated headers overhead
+  // Estimated HTTP headers overhead for the upload request
+  if (uploadBytes > 0 || (options && options.method && options.method !== "GET")) {
+    uploadBytes += 200; 
+  }
   addBytes(uploadBytes);
 
   try {
@@ -40,50 +80,6 @@ window.fetch = async function (resource, options) {
         showAuthOverlay(false);
       }
     }
-    const clonedResponse = response.clone();
-    const contentType = response.headers.get("content-type") || "";
-    const isStream = contentType.includes("text/event-stream") || 
-                     contentType.includes("application/octet-stream") ||
-                     (typeof resource === "string" && resource.includes("/api/chat"));
-
-    if (isStream) {
-      const originalBody = response.body;
-      if (originalBody) {
-        const reader = originalBody.getReader();
-        const newStream = new ReadableStream({
-          async start(controller) {
-            try {
-              while (true) {
-                const { done, value } = await reader.read();
-                if (done) {
-                  controller.close();
-                  break;
-                }
-                if (value) {
-                  addBytes(value.byteLength);
-                  controller.enqueue(value);
-                }
-              }
-            } catch (e) {
-              controller.error(e);
-            }
-          }
-        });
-        const customResponse = new Response(newStream, {
-          status: response.status,
-          statusText: response.statusText,
-          headers: response.headers,
-        });
-        Object.defineProperty(customResponse, "url", { value: response.url });
-        return customResponse;
-      }
-    } else {
-      clonedResponse.text().then((text) => {
-        const downloadBytes = new TextEncoder().encode(text).length;
-        addBytes(downloadBytes);
-      }).catch(() => {});
-    }
-
     return response;
   } catch (err) {
     throw err;
