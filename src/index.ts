@@ -256,6 +256,119 @@ app.post("/api/config", async (c) => {
   }
 });
 
+app.get("/api/models", async (c) => {
+  const provider = c.req.query("provider");
+  if (!provider) {
+    return c.json({ error: "Provider is required" }, 400);
+  }
+
+  const fallbacks: Record<string, string[]> = {
+    ollama: ["llama3", "llama3.1", "llama3.2", "gemma2", "mistral", "phi3", "qwen2.5"],
+    gemini: ["gemini-2.5-flash", "gemini-2.5-pro", "gemini-1.5-flash", "gemini-1.5-pro"],
+    openrouter: [
+      "google/gemini-2.5-flash",
+      "meta-llama/llama-3.3-70b-instruct",
+      "anthropic/claude-3.5-sonnet",
+      "deepseek/deepseek-chat"
+    ],
+    groq: ["llama-3.3-70b-versatile", "llama-3.1-8b-instant", "mixtral-8x7b-32768", "gemma2-9b-it"],
+    cerebras: ["llama3.1-8b", "llama3.1-70b"],
+    cloudflare: [
+      "@cf/meta/llama-3.1-8b-instruct",
+      "@cf/meta/llama-3-8b-instruct",
+      "@cf/mistral/mistral-7b-instruct-v0.1",
+      "@cf/qwen/qwen1.5-7b-chat"
+    ]
+  };
+
+  try {
+    if (provider === "ollama") {
+      const url = getSetting("ollama_url") || "http://localhost:11434";
+      const key = getSetting("ollama_api_key");
+      const headers: Record<string, string> = {};
+      if (key) headers["Authorization"] = `Bearer ${key}`;
+      
+      const res = await fetch(`${url.replace(/\/$/, "")}/api/tags`, { headers });
+      if (res.ok) {
+        const data: any = await res.json();
+        if (Array.isArray(data.models)) {
+          return c.json(data.models.map((m: any) => m.name));
+        }
+      }
+    } else if (provider === "gemini") {
+      const key = getSetting("gemini_api_key");
+      if (key) {
+        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${key}`);
+        if (res.ok) {
+          const data: any = await res.json();
+          if (Array.isArray(data.models)) {
+            const models = data.models
+              .map((m: any) => m.name.replace("models/", ""))
+              .filter((name: string) => name.startsWith("gemini-"));
+            if (models.length > 0) return c.json(models);
+          }
+        }
+      }
+    } else if (provider === "openrouter") {
+      const key = getSetting("openrouter_api_key");
+      const headers: Record<string, string> = {};
+      if (key) headers["Authorization"] = `Bearer ${key}`;
+      
+      const res = await fetch("https://openrouter.ai/api/v1/models", { headers });
+      if (res.ok) {
+        const data: any = await res.json();
+        if (Array.isArray(data.data)) {
+          return c.json(data.data.map((m: any) => m.id));
+        }
+      }
+    } else if (provider === "groq") {
+      const key = getSetting("groq_api_key");
+      if (key) {
+        const res = await fetch("https://api.groq.com/openai/v1/models", {
+          headers: { "Authorization": `Bearer ${key}` }
+        });
+        if (res.ok) {
+          const data: any = await res.json();
+          if (Array.isArray(data.data)) {
+            return c.json(data.data.map((m: any) => m.id));
+          }
+        }
+      }
+    } else if (provider === "cerebras") {
+      const key = getSetting("cerebras_api_key");
+      if (key) {
+        const res = await fetch("https://api.cerebras.ai/v1/models", {
+          headers: { "Authorization": `Bearer ${key}` }
+        });
+        if (res.ok) {
+          const data: any = await res.json();
+          if (Array.isArray(data.data)) {
+            return c.json(data.data.map((m: any) => m.id));
+          }
+        }
+      }
+    } else if (provider === "cloudflare") {
+      const accountId = getSetting("cloudflare_account_id");
+      const token = getSetting("cloudflare_api_token");
+      if (accountId && token) {
+        const res = await fetch(`https://api.cloudflare.com/client/v4/accounts/${accountId}/ai/models/search`, {
+          headers: { "Authorization": `Bearer ${token}` }
+        });
+        if (res.ok) {
+          const data: any = await res.json();
+          if (Array.isArray(data.result)) {
+            return c.json(data.result.map((m: any) => m.name));
+          }
+        }
+      }
+    }
+  } catch (err: any) {
+    console.error(`Failed to fetch dynamic models for ${provider}:`, err.message);
+  }
+
+  return c.json(fallbacks[provider] || []);
+});
+
 // MCP Servers configurations
 app.get("/api/config/mcp", (c) => {
   return c.json(getMcpServersConfig());

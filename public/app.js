@@ -180,9 +180,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   ]);
 
   // Hook up provider change listeners for settings model dropdown
-  updateModelDatalist(settingProvider.value, "setting-model-select");
-  settingProvider.addEventListener("change", () => {
-    updateModelDatalist(settingProvider.value, "setting-model-select");
+  settingProvider.addEventListener("change", async () => {
+    await updateModelDatalist(settingProvider.value, "setting-model-select");
     const presets = modelPresets[settingProvider.value] || [];
     if (presets.length > 0) {
       settingModelSelect.value = presets[0];
@@ -202,8 +201,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   const chatModelUpdateBtn = document.getElementById("chat-model-update-btn");
 
   if (chatProviderSelect) {
-    chatProviderSelect.addEventListener("change", () => {
-      updateModelDatalist(chatProviderSelect.value, "chat-model-select");
+    chatProviderSelect.addEventListener("change", async () => {
+      await updateModelDatalist(chatProviderSelect.value, "chat-model-select");
       const presets = modelPresets[chatProviderSelect.value] || [];
       if (presets.length > 0 && chatModelSelect) {
         chatModelSelect.value = presets[0];
@@ -500,7 +499,7 @@ async function selectConversation(id) {
     }
     if (chatProviderSelect) {
       chatProviderSelect.value = conv.provider;
-      updateModelDatalist(conv.provider, "chat-model-select");
+      await updateModelDatalist(conv.provider, "chat-model-select");
     }
 
     const presets = modelPresets[conv.provider] || [];
@@ -945,7 +944,7 @@ async function loadConfig() {
     settingProvider.value = activeProvider;
     
     // Check if the loaded model matches a preset
-    updateModelDatalist(activeProvider, "setting-model-select");
+    await updateModelDatalist(activeProvider, "setting-model-select");
     const presets = modelPresets[activeProvider] || [];
     const isCustom = !presets.includes(activeModel);
 
@@ -1025,17 +1024,43 @@ const modelPresets = {
   ]
 };
 
-function updateModelDatalist(provider, selectId) {
+async function updateModelDatalist(provider, selectId) {
   const selectEl = document.getElementById(selectId);
   if (!selectEl) return;
-  selectEl.innerHTML = "";
-  const models = modelPresets[provider] || [];
-  models.forEach((model) => {
-    const option = document.createElement("option");
-    option.value = model;
-    option.innerText = model;
-    selectEl.appendChild(option);
-  });
+  
+  selectEl.innerHTML = `<option value="">모델 불러오는 중...</option>`;
+  
+  try {
+    const res = await fetch(`/api/models?provider=${provider}`);
+    if (!res.ok) throw new Error("API failed");
+    const models = await res.json();
+    
+    selectEl.innerHTML = "";
+    if (models.length === 0) {
+      const option = document.createElement("option");
+      option.value = "";
+      option.innerText = "사용 가능한 모델 없음";
+      selectEl.appendChild(option);
+      return;
+    }
+    
+    models.forEach((model) => {
+      const option = document.createElement("option");
+      option.value = model;
+      option.innerText = model;
+      selectEl.appendChild(option);
+    });
+  } catch (err) {
+    console.error("Failed to load model list from API, falling back to presets:", err);
+    selectEl.innerHTML = "";
+    const models = modelPresets[provider] || [];
+    models.forEach((model) => {
+      const option = document.createElement("option");
+      option.value = model;
+      option.innerText = model;
+      selectEl.appendChild(option);
+    });
+  }
 }
 
 // Global UI Formatting utilities
