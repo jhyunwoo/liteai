@@ -1167,7 +1167,10 @@ function sanitizeHtml(html) {
     }
   }
   
-  cleanNode(doc.body);
+  const children = Array.from(doc.body.childNodes);
+  for (const child of children) {
+    cleanNode(child);
+  }
   return doc.body.innerHTML;
 }
 
