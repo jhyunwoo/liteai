@@ -7,7 +7,7 @@ import server from "../../src/index";
 const dbFile = join(process.cwd(), "tests/e2e/test-ui-db.db");
 process.env.DATABASE_PATH = dbFile;
 
-import * as db from "../../src/db";
+import * as db from "../../src/database";
 
 describe("E2E Web UI Simulation Tests", () => {
   let window: Window;

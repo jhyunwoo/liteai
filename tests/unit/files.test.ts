@@ -7,11 +7,12 @@ const testWorkspaceDir = join(process.cwd(), "tests/unit/test-workspace");
 process.env.WORKSPACE_PATH = testWorkspaceDir;
 
 // Import files module after setting WORKSPACE_PATH
-import * as files from "../../src/files";
+import * as files from "../../src/services/file.service";
+import { resolveSafePath, ensureWorkspaceExists } from "../../src/utils/security";
 
 describe("Files Sandbox Unit Tests", () => {
   beforeAll(async () => {
-    await files.ensureWorkspaceExists();
+    await ensureWorkspaceExists();
   });
 
   afterAll(async () => {
@@ -22,24 +23,23 @@ describe("Files Sandbox Unit Tests", () => {
 
   describe("resolveSafePath", () => {
     it("should resolve relative path correctly within workspace", () => {
-      const resolved = files.resolveSafePath("sub/file.txt");
+      const resolved = resolveSafePath("sub/file.txt");
       expect(resolved).toBe(join(testWorkspaceDir, "sub/file.txt"));
     });
 
     it("should allow root workspace directory resolution", () => {
-      const resolved = files.resolveSafePath("");
+      const resolved = resolveSafePath("");
       expect(resolved).toBe(testWorkspaceDir);
     });
 
     it("should throw error for paths outside workspace (Traversal)", () => {
-      expect(() => files.resolveSafePath("../outside.txt")).toThrow("Access denied");
-      expect(() => files.resolveSafePath("/etc/passwd")).toThrow("Access denied");
-      expect(() => files.resolveSafePath("..")).toThrow("Access denied");
+      expect(() => resolveSafePath("../outside.txt")).toThrow("Access denied");
+      expect(() => resolveSafePath("/etc/passwd")).toThrow("Access denied");
+      expect(() => resolveSafePath("..")).toThrow("Access denied");
     });
 
     it("should throw error for partial path traversal attempts", () => {
-      // workspaceDir is test-workspace, attempts to access test-workspace-secret
-      expect(() => files.resolveSafePath("../test-workspace-secret")).toThrow("Access denied");
+      expect(() => resolveSafePath("../test-workspace-secret")).toThrow("Access denied");
     });
   });
 

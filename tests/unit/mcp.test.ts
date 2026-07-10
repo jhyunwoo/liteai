@@ -5,8 +5,8 @@ import { existsSync, unlinkSync } from "fs";
 const dbFile = join(process.cwd(), "tests/unit/test-mcp-db.db");
 process.env.DATABASE_PATH = dbFile;
 
-import * as db from "../../src/db";
-import * as mcp from "../../src/mcp";
+import * as db from "../../src/database";
+import * as mcp from "../../src/services/mcp.service";
 
 describe("MCP Integration Unit Tests", () => {
   let originalSpawn: any;

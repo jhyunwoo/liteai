@@ -8,7 +8,7 @@ const workspaceDir = join(process.cwd(), "tests/integration/test-workspace");
 process.env.DATABASE_PATH = dbFile;
 process.env.WORKSPACE_PATH = workspaceDir;
 
-import * as db from "../../src/db";
+import * as db from "../../src/database";
 import { rm } from "fs/promises";
 
 describe("API Server Integration Tests", () => {

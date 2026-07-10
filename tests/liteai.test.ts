@@ -1,23 +1,26 @@
+/**
+ * @module tests/liteai.test
+ * @description LiteAI 백엔드 통합 테스트 스위트
+ *
+ * 리팩토링된 모듈 구조에 맞춰 import 경로를 업데이트하고
+ * 리포지토리 패턴의 메서드 호출로 변경하였습니다.
+ */
+
 import { describe, expect, it, beforeAll, afterAll } from "bun:test";
 import server from "../src/index";
 import {
   db,
-  createConversation,
-  getConversation,
-  listConversations,
-  deleteConversation,
-  addMessage,
-  getMessages,
-  setSetting,
-  getSetting,
-} from "../src/db";
+  conversationRepository,
+  messageRepository,
+  settingRepository,
+} from "../src/database";
+import { resolveSafePath } from "../src/utils/security";
 import {
-  resolveSafePath,
   writeWorkspaceFile,
   readWorkspaceFile,
   listFiles,
   deleteWorkspaceFile,
-} from "../src/files";
+} from "../src/services/file.service";
 import { existsSync } from "fs";
 import { rm } from "fs/promises";
 import { join } from "path";
@@ -28,17 +31,17 @@ describe("LiteAI Backend Engine Tests", () => {
     const testId = "test-conversation-uuid-12345";
 
     beforeAll(() => {
-      deleteConversation(testId);
+      conversationRepository.deleteById(testId);
     });
 
     it("should successfully save a setting", () => {
-      setSetting("test_key", "test_value");
-      expect(getSetting("test_key")).toBe("test_value");
+      settingRepository.set("test_key", "test_value");
+      expect(settingRepository.get("test_key")).toBe("test_value");
     });
 
     it("should create and retrieve a conversation", () => {
-      createConversation(testId, "Test Title", "llama3", "ollama", "system prompt test");
-      const conv = getConversation(testId);
+      conversationRepository.create(testId, "Test Title", "llama3", "ollama", "system prompt test");
+      const conv = conversationRepository.getById(testId);
       
       expect(conv).not.toBeNull();
       expect(conv?.title).toBe("Test Title");
@@ -48,7 +51,7 @@ describe("LiteAI Backend Engine Tests", () => {
     });
 
     it("should list conversations and include the new one", () => {
-      const list = listConversations();
+      const list = conversationRepository.list();
       const match = list.find((c) => c.id === testId);
       expect(match).toBeDefined();
     });
@@ -56,10 +59,10 @@ describe("LiteAI Backend Engine Tests", () => {
     it("should write and read messages in order", () => {
       const msgId1 = "msg-1";
       const msgId2 = "msg-2";
-      addMessage(msgId1, testId, "user", "Hello Assistant");
-      addMessage(msgId2, testId, "assistant", "Hello User");
+      messageRepository.create(msgId1, testId, "user", "Hello Assistant");
+      messageRepository.create(msgId2, testId, "assistant", "Hello User");
 
-      const msgs = getMessages(testId);
+      const msgs = messageRepository.getByConversationId(testId);
       expect(msgs.length).toBe(2);
       expect(msgs[0].role).toBe("user");
       expect(msgs[0].content).toBe("Hello Assistant");
@@ -68,11 +71,11 @@ describe("LiteAI Backend Engine Tests", () => {
     });
 
     it("should successfully cascade delete messages when conversation is deleted", () => {
-      deleteConversation(testId);
-      const conv = getConversation(testId);
+      conversationRepository.deleteById(testId);
+      const conv = conversationRepository.getById(testId);
       expect(conv).toBeNull();
       
-      const msgs = getMessages(testId);
+      const msgs = messageRepository.getByConversationId(testId);
       expect(msgs.length).toBe(0);
     });
   });
@@ -118,14 +121,7 @@ describe("LiteAI Backend Engine Tests", () => {
     });
 
     it("should prevent auth bypass trick (/api/auth/../conversations)", async () => {
-      // In JS Request, URL resolves /../ automatically before fetch
-      // But we can construct a raw Request to test if the server handles raw paths or decodes.
-      // If we query '/api/auth/../conversations', JavaScript Request will resolve it to '/api/conversations'.
-      // However, we want to see if we send encoded traversal like '/api/auth/%2e%2e/conversations' or similar:
       const res = await server.fetch(new Request("http://localhost/api/auth/%2e%2e/conversations"));
-      // If bypass is successful, it would bypass middleware because path.startsWith('/api/auth/') is true
-      // since the path string raw might start with /api/auth/ before normalisation or it might route to /api/conversations.
-      // Let's see what happens.
       expect(res.status).toBe(401);
     });
   });

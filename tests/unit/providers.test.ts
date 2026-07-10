@@ -1,20 +1,20 @@
-import { beforeAll, afterAll, describe, expect, it, spyOn } from "bun:test";
+import { beforeAll, afterAll, describe, expect, it } from "bun:test";
 import { join } from "path";
 import { existsSync, unlinkSync } from "fs";
 
 const dbFile = join(process.cwd(), "tests/unit/test-providers-db.db");
 process.env.DATABASE_PATH = dbFile;
 
-import * as db from "../../src/db";
-import { streamChat } from "../../src/providers";
+import { settingRepository } from "../../src/database";
+import { getProvider } from "../../src/providers";
 
 describe("LLM Providers Unit Tests", () => {
   let originalFetch: any;
 
   beforeAll(() => {
     originalFetch = global.fetch;
-    db.setSetting("ollama_url", "http://localhost:11434");
-    db.setSetting("gemini_api_key", "mock-gemini-key");
+    settingRepository.set("ollama_url", "http://localhost:11434");
+    settingRepository.set("gemini_api_key", "mock-gemini-key");
   });
 
   afterAll(() => {
@@ -44,7 +44,8 @@ describe("LLM Providers Unit Tests", () => {
       return new Response(stream);
     };
 
-    const stream = await streamChat("ollama", "llama3", [{ role: "user", content: "hi" }], null);
+    const provider = getProvider("ollama");
+    const stream = await provider.streamChat("llama3", [{ role: "user", content: "hi" }], null);
     const reader = stream.getReader();
     
     let result = "";
@@ -77,7 +78,8 @@ describe("LLM Providers Unit Tests", () => {
       return new Response(stream);
     };
 
-    const stream = await streamChat("gemini", "gemini-1.5-flash", [{ role: "user", content: "describe gemma" }], null);
+    const provider = getProvider("gemini");
+    const stream = await provider.streamChat("gemini-1.5-flash", [{ role: "user", content: "describe gemma" }], null);
     const reader = stream.getReader();
     
     let result = "";

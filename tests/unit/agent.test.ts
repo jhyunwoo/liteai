@@ -5,22 +5,16 @@ import { existsSync, unlinkSync } from "fs";
 const dbFile = join(process.cwd(), "tests/unit/test-agent-db.db");
 process.env.DATABASE_PATH = dbFile;
 
-import * as db from "../../src/db";
-import { runAgentTask } from "../../src/agent";
-
-// Export private function executeLocalCommand indirectly or we can test command validation via runAgentTask logic
-// But we can also test it since we added safety checks. To make it directly testable, we can test that it throws when executing local command tool name.
-// Since executeLocalCommand is not exported, we can check how runAgentTask handles unsafe tool calls.
-// Actually, runAgentTask runs run_command as a tool and returns the outcome in agent_tasks logs. We can read logs from DB to verify if security blockage was triggered!
-// This is an extremely elegant integration-style unit test approach.
+import { settingRepository, agentTaskRepository } from "../../src/database";
+import { runAgentTask } from "../../src/services/agent.service";
 
 describe("AI Agent Unit & Security Tests", () => {
   let originalFetch: any;
 
   beforeAll(() => {
     originalFetch = global.fetch;
-    db.setSetting("active_provider", "ollama");
-    db.setSetting("active_model", "llama3");
+    settingRepository.set("active_provider", "ollama");
+    settingRepository.set("active_model", "llama3");
   });
 
   afterAll(() => {
@@ -51,7 +45,7 @@ describe("AI Agent Unit & Security Tests", () => {
     // Wait a brief moment
     await new Promise(resolve => setTimeout(resolve, 50));
 
-    const task = db.getAgentTask(taskId);
+    const task = agentTaskRepository.getById(taskId);
     expect(task).not.toBeNull();
     expect(task?.status).toBe("failed");
     expect(task?.logs).toContain("Security blocked: execution of command containing 'sudo' is prohibited.");
@@ -75,7 +69,7 @@ describe("AI Agent Unit & Security Tests", () => {
     
     await new Promise(resolve => setTimeout(resolve, 50));
 
-    const task = db.getAgentTask(taskId);
+    const task = agentTaskRepository.getById(taskId);
     expect(task?.status).toBe("failed");
     expect(task?.logs).toContain("Security blocked: directory traversal or system paths in command are prohibited.");
   });
@@ -99,7 +93,7 @@ describe("AI Agent Unit & Security Tests", () => {
     
     await new Promise(resolve => setTimeout(resolve, 50));
 
-    const task = db.getAgentTask(taskId);
+    const task = agentTaskRepository.getById(taskId);
     expect(task?.status).toBe("success");
     expect(task?.logs).toContain("[Agent Finished] Task completed successfully");
   });

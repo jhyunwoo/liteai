@@ -5,8 +5,8 @@ import { existsSync, unlinkSync } from "fs";
 const dbFile = join(process.cwd(), "tests/unit/test-search-db.db");
 process.env.DATABASE_PATH = dbFile;
 
-import * as db from "../../src/db";
-import { searchWeb } from "../../src/search";
+import { settingRepository } from "../../src/database";
+import { searchWeb } from "../../src/services/search.service";
 
 describe("Web Search Providers Unit Tests", () => {
   let originalFetch: any;
@@ -23,8 +23,8 @@ describe("Web Search Providers Unit Tests", () => {
   });
 
   it("should parse Brave Search JSON response correctly", async () => {
-    db.setSetting("search_provider", "brave");
-    db.setSetting("brave_search_key", "mock-brave-key");
+    settingRepository.set("search_provider", "brave");
+    settingRepository.set("brave_search_key", "mock-brave-key");
 
     global.fetch = async (url: any) => {
       expect(url.toString()).toContain("api.search.brave.com");
@@ -45,8 +45,8 @@ describe("Web Search Providers Unit Tests", () => {
   });
 
   it("should parse Serper.dev JSON response correctly", async () => {
-    db.setSetting("search_provider", "serper");
-    db.setSetting("serper_api_key", "mock-serper-key");
+    settingRepository.set("search_provider", "serper");
+    settingRepository.set("serper_api_key", "mock-serper-key");
 
     global.fetch = async (url: any, options: any) => {
       expect(url.toString()).toContain("google.serper.dev/search");
@@ -66,7 +66,7 @@ describe("Web Search Providers Unit Tests", () => {
   });
 
   it("should crawl and parse DuckDuckGo HTML fallback response", async () => {
-    db.setSetting("search_provider", "duckduckgo");
+    settingRepository.set("search_provider", "duckduckgo");
 
     const mockHtml = `
       <html>
