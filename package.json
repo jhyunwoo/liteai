@@ -3,8 +3,9 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "dev": "bun run --hot src/index.ts",
-    "start": "bun run src/index.ts"
+    "build": "bun run scripts/build.ts",
+    "dev": "bun run scripts/build.ts && bun run --hot src/index.ts",
+    "start": "bun run scripts/build.ts && bun run src/index.ts"
   },
   "dependencies": {
     "hono": "^4.0.0"
