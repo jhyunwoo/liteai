@@ -4,6 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>LiteAI - 초경량 AI 워크스페이스</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600;1,700&family=Inter:ital,wght@0,100..900;1,100..900&family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -11,7 +14,14 @@
     <!-- 사이드바 -->
     <aside class="sidebar">
       <div class="sidebar-header">
-        <h1 class="logo">Lite<span>AI</span></h1>
+        <h1 class="logo">
+          <svg class="brand-spike" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" style="width: 18px; height: 18px; margin-right: 6px; color: var(--color-primary); display: inline-block; vertical-align: middle; flex-shrink: 0; transform: rotate(15deg);">
+            <line x1="12" y1="3" x2="12" y2="21"></line>
+            <line x1="3" y1="12" x2="21" y2="12"></line>
+            <line x1="5.64" y1="5.64" x2="18.36" y2="18.36" stroke-width="1.8"></line>
+            <line x1="5.64" y1="18.36" x2="18.36" y2="5.64" stroke-width="1.8"></line>
+          </svg>Lite<span>AI</span>
+        </h1>
         <div style="display: flex; gap: 8px; align-items: center;">
           <button id="new-chat-btn" class="btn btn-primary btn-sm">+ 새 대화</button>
           <button id="logout-btn" class="btn btn-outline btn-xs" style="padding: 4px 8px; border-color: var(--border-color); color: var(--text-muted); cursor: pointer; display: none;">로그아웃</button>
