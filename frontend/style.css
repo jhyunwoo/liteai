@@ -427,6 +427,8 @@ body {
   transition: var(--transition-smooth);
   border: 1px solid transparent;
   text-decoration: none;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .btn-primary {
