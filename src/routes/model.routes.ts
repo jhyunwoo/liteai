@@ -26,7 +26,13 @@ modelRoutes.get("/", async (c) => {
 
   try {
     const providerInstance = getProvider(provider);
-    const models = await providerInstance.listModels();
+    const timeout = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error("Query timeout")), 800)
+    );
+    const models = await Promise.race([
+      providerInstance.listModels(),
+      timeout
+    ]);
     if (models.length > 0) return c.json(models);
   } catch (err: unknown) {
     console.error(`Failed to fetch dynamic models for ${provider}:`, (err as Error).message);

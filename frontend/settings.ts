@@ -56,7 +56,7 @@ async function updateSettingsModelDatalist(
   
   try {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 1500);
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
     
     const res = await helpers.originalFetch(`/api/models?provider=${provider}`, { signal: controller.signal });
     clearTimeout(timeoutId);
@@ -92,8 +92,9 @@ async function updateSettingsModelDatalist(
     } else if (models.length > 0) {
       selectEl.value = models[0];
     }
-  } catch (err) {
-    selectEl.innerHTML = `<option value="">모델 불러오기 실패</option>`;
+  } catch (err: any) {
+    console.error(`Failed to update settings model list for ${provider}:`, err);
+    selectEl.innerHTML = `<option value="">모델 불러오기 실패 (${err.message || err})</option>`;
     if (selectedModel) {
       const opt = document.createElement("option");
       opt.value = selectedModel;
