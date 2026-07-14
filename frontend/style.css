@@ -130,10 +130,11 @@ body {
 }
 
 .sidebar-header {
-  padding: var(--spacing-lg) var(--spacing-lg) var(--spacing-md) var(--spacing-lg);
+  padding: var(--spacing-lg) var(--spacing-md) var(--spacing-md) var(--spacing-md);
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: var(--spacing-md);
 }
 
 .logo {
