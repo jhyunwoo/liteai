@@ -53,7 +53,7 @@ trackInitialPerformance();
 setupPerformanceObserver();
 
 // Monkey-patch window.fetch to track UPLOAD data usage and handle auth globally
-const originalFetch = window.fetch;
+const originalFetch = window.fetch.bind(window);
 window.fetch = async function (resource, options) {
   let uploadBytes = 0;
   
