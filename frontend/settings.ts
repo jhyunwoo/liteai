@@ -39,13 +39,26 @@ const settingMcpServers = document.getElementById("setting-mcp-servers") as HTML
 const currentProviderBadge = document.getElementById("current-provider-badge") as HTMLSpanElement;
 const currentModelBadge = document.getElementById("current-model-badge") as HTMLSpanElement;
 
-async function updateSettingsModelDatalist(provider: string, selectId: string) {
+async function updateSettingsModelDatalist(provider: string, selectId: string, selectedModel?: string) {
   const selectEl = document.getElementById(selectId) as HTMLSelectElement;
   if (!selectEl) return;
+  
   selectEl.innerHTML = `<option value="">모델 불러오는 중...</option>`;
+  if (selectedModel) {
+    const opt = document.createElement("option");
+    opt.value = selectedModel;
+    opt.innerText = selectedModel;
+    selectEl.appendChild(opt);
+    selectEl.value = selectedModel;
+  }
   
   try {
-    const res = await helpers.originalFetch(`/api/models?provider=${provider}`);
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 1500);
+    
+    const res = await helpers.originalFetch(`/api/models?provider=${provider}`, { signal: controller.signal });
+    clearTimeout(timeoutId);
+    
     if (!res.ok) throw new Error("API failed");
     const models = await res.json();
     
@@ -64,6 +77,10 @@ async function updateSettingsModelDatalist(provider: string, selectId: string) {
       option.innerText = model;
       selectEl.appendChild(option);
     });
+    
+    if (selectedModel && models.includes(selectedModel)) {
+      selectEl.value = selectedModel;
+    }
   } catch (err) {
     selectEl.innerHTML = "";
     const models = settingsModelPresets[provider] || [];
@@ -73,6 +90,9 @@ async function updateSettingsModelDatalist(provider: string, selectId: string) {
       option.innerText = model;
       selectEl.appendChild(option);
     });
+    if (selectedModel) {
+      selectEl.value = selectedModel;
+    }
   }
 }
 
@@ -182,7 +202,7 @@ async function loadConfig() {
 
     if (settingProvider) settingProvider.value = activeProvider;
     
-    await updateSettingsModelDatalist(activeProvider, "setting-model-select");
+    updateSettingsModelDatalist(activeProvider, "setting-model-select", activeModel);
     const presets = settingsModelPresets[activeProvider] || [];
     const isCustom = !presets.includes(activeModel);
 
