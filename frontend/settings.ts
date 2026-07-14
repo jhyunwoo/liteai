@@ -1,3 +1,4 @@
+(function () {
 // 4. CONFIG CONFIGURATION LOGIC
 const state = (window as any).appState;
 const helpers = (window as any).appHelpers;
@@ -258,3 +259,4 @@ async function loadConfig() {
   setupConfigHandlers();
   loadConfig();
 };
+})();

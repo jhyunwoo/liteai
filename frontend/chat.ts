@@ -1,3 +1,4 @@
+(function () {
 // 1. CHAT MODULE LOGIC
 const state = (window as any).appState;
 const helpers = (window as any).appHelpers;
@@ -435,3 +436,4 @@ function setupModelChangeToolbar() {
   setupModelChangeToolbar();
   loadConversations();
 };
+})();

@@ -1,3 +1,4 @@
+(function () {
 // 2. FILES MODULE LOGIC
 const state = (window as any).appState;
 const helpers = (window as any).appHelpers;
@@ -225,3 +226,4 @@ function openFileInEditor(path: string) {
   setupFileHandlers();
   loadFiles();
 };
+})();

@@ -1,3 +1,4 @@
+(function () {
 // Data Usage State & Network Interceptor
 let sessionBytes = 0;
 let totalBytes = parseInt(localStorage.getItem("liteai_total_bytes") || "0", 10);
@@ -437,3 +438,4 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (typeof (window as any).initChat === "function") (window as any).initChat();
   }
 });
+})();

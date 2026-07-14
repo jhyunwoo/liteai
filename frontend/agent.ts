@@ -1,3 +1,4 @@
+(function () {
 // 3. AGENT MODULE LOGIC
 const state = (window as any).appState;
 const helpers = (window as any).appHelpers;
@@ -157,3 +158,4 @@ async function fetchAgentLogs(taskId: string) {
     monitorAgentTask(state.activeAgentTaskId);
   }
 };
+})();
