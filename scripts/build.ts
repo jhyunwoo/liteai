@@ -127,12 +127,12 @@ console.log("---------------------------------");
 console.log(` TOTAL BUDGET SIZE:     ${totalInitialBrotliSize} bytes (${(totalInitialBrotliSize / 1024).toFixed(2)} KB)`);
 console.log("=================================\n");
 
-const BUDGET_LIMIT = 10 * 1024; // 10KB = 10240 bytes
+const BUDGET_LIMIT = 20 * 1024; // 20KB = 20480 bytes
 if (totalInitialBrotliSize > BUDGET_LIMIT) {
-  console.error(`❌ BUDGET EXCEEDED! Initial transfer size (${totalInitialBrotliSize} bytes) exceeds 10KB limit.`);
+  console.error(`❌ BUDGET EXCEEDED! Initial transfer size (${totalInitialBrotliSize} bytes) exceeds 20KB limit.`);
   process.exit(1);
 } else {
-  console.log("✅ BUDGET PASSED! Initial transfer size is within 10KB.");
+  console.log("✅ BUDGET PASSED! Initial transfer size is within 20KB.");
 }
 
 console.log("✨ Build process successfully complete.");

@@ -4,16 +4,6 @@ const helpers = (window as any).appHelpers;
 
 let settingsInitialized = false;
 
-// Model presets dictionary for quick dropdown lookup
-const settingsModelPresets: any = {
-  ollama: ["llama3", "llama3.1", "llama3.2", "llama3.3", "gemma2", "mistral", "qwen2.5", "deepseek-r1"],
-  gemini: ["gemini-3.5-flash", "gemini-3.5-pro", "gemini-2.5-flash", "gemini-2.5-pro", "gemini-2.0-flash", "gemini-2.0-pro", "gemini-1.5-flash", "gemini-1.5-pro"],
-  openrouter: ["google/gemini-3.5-flash", "google/gemini-3.5-pro", "google/gemini-2.5-flash", "meta-llama/llama-3.3-70b-instruct", "anthropic/claude-3.5-sonnet", "deepseek/deepseek-chat", "deepseek/deepseek-reasoner"],
-  groq: ["llama-3.3-70b-versatile", "llama-3.1-8b-instant", "mixtral-8x7b-32768", "gemma2-9b-it", "deepseek-r1-distill-llama-70b"],
-  cerebras: ["llama3.3-70b", "llama3.1-8b", "llama3.1-70b"],
-  cloudflare: ["@cf/meta/llama-3.3-70b-instruct", "@cf/meta/llama-3.1-8b-instruct", "@cf/meta/llama-3-8b-instruct", "@cf/mistral/mistral-7b-instruct-v0.1", "@cf/qwen/qwen1.5-7b-chat", "@cf/deepseek-ai/deepseek-r1-distill-qwen-1.5b"]
-};
-
 const saveConfigBtn = document.getElementById("save-config-btn") as HTMLButtonElement;
 const configStatusMsg = document.getElementById("config-status-msg") as HTMLSpanElement;
 const settingProvider = document.getElementById("setting-provider") as HTMLSelectElement;
@@ -39,10 +29,18 @@ const settingMcpServers = document.getElementById("setting-mcp-servers") as HTML
 const currentProviderBadge = document.getElementById("current-provider-badge") as HTMLSpanElement;
 const currentModelBadge = document.getElementById("current-model-badge") as HTMLSpanElement;
 
-async function updateSettingsModelDatalist(provider: string, selectId: string, selectedModel?: string) {
+async function updateSettingsModelDatalist(
+  provider: string,
+  selectId: string,
+  selectedModel?: string,
+  customToggleId?: string,
+  customInputId?: string
+) {
   const selectEl = document.getElementById(selectId) as HTMLSelectElement;
   if (!selectEl) return;
-  
+  const toggleEl = customToggleId ? document.getElementById(customToggleId) as HTMLInputElement : null;
+  const customEl = customInputId ? document.getElementById(customInputId) as HTMLInputElement : null;
+
   selectEl.innerHTML = `<option value="">모델 불러오는 중...</option>`;
   if (selectedModel) {
     const opt = document.createElement("option");
@@ -50,6 +48,10 @@ async function updateSettingsModelDatalist(provider: string, selectId: string, s
     opt.innerText = selectedModel;
     selectEl.appendChild(opt);
     selectEl.value = selectedModel;
+
+    if (toggleEl) toggleEl.checked = false;
+    if (selectEl) selectEl.style.display = "block";
+    if (customEl) customEl.style.display = "none";
   }
   
   try {
@@ -78,20 +80,30 @@ async function updateSettingsModelDatalist(provider: string, selectId: string, s
       selectEl.appendChild(option);
     });
     
-    if (selectedModel && models.includes(selectedModel)) {
-      selectEl.value = selectedModel;
+    if (selectedModel) {
+      const isCustom = !models.includes(selectedModel);
+      if (toggleEl) toggleEl.checked = isCustom;
+      if (selectEl) selectEl.style.display = isCustom ? "none" : "block";
+      if (customEl) {
+        customEl.style.display = isCustom ? "block" : "none";
+        customEl.value = selectedModel;
+      }
+      if (!isCustom) selectEl.value = selectedModel;
+    } else if (models.length > 0) {
+      selectEl.value = models[0];
     }
   } catch (err) {
-    selectEl.innerHTML = "";
-    const models = settingsModelPresets[provider] || [];
-    models.forEach((model: string) => {
-      const option = document.createElement("option");
-      option.value = model;
-      option.innerText = model;
-      selectEl.appendChild(option);
-    });
+    selectEl.innerHTML = `<option value="">모델 불러오기 실패</option>`;
     if (selectedModel) {
+      const opt = document.createElement("option");
+      opt.value = selectedModel;
+      opt.innerText = selectedModel;
+      selectEl.appendChild(opt);
       selectEl.value = selectedModel;
+
+      if (toggleEl) toggleEl.checked = false;
+      if (selectEl) selectEl.style.display = "block";
+      if (customEl) customEl.style.display = "none";
     }
   }
 }
@@ -170,12 +182,14 @@ function setupConfigHandlers() {
   }
 
   if (settingProvider) {
-    settingProvider.addEventListener("change", async () => {
-      await updateSettingsModelDatalist(settingProvider.value, "setting-model-select");
-      const presets = settingsModelPresets[settingProvider.value] || [];
-      if (presets.length > 0 && settingModelSelect) {
-        settingModelSelect.value = presets[0];
-      }
+    settingProvider.addEventListener("change", () => {
+      updateSettingsModelDatalist(
+        settingProvider.value,
+        "setting-model-select",
+        undefined,
+        "setting-model-custom-toggle",
+        "setting-model-custom"
+      );
     });
   }
 
@@ -202,19 +216,13 @@ async function loadConfig() {
 
     if (settingProvider) settingProvider.value = activeProvider;
     
-    updateSettingsModelDatalist(activeProvider, "setting-model-select", activeModel);
-    const presets = settingsModelPresets[activeProvider] || [];
-    const isCustom = !presets.includes(activeModel);
-
-    if (settingModelCustomToggle) settingModelCustomToggle.checked = isCustom;
-    if (settingModelSelect) {
-      settingModelSelect.style.display = isCustom ? "none" : "block";
-      if (!isCustom) settingModelSelect.value = activeModel;
-    }
-    if (settingModelCustom) {
-      settingModelCustom.style.display = isCustom ? "block" : "none";
-      settingModelCustom.value = activeModel;
-    }
+    updateSettingsModelDatalist(
+      activeProvider,
+      "setting-model-select",
+      activeModel,
+      "setting-model-custom-toggle",
+      "setting-model-custom"
+    );
 
     if (settingSystemPrompt) settingSystemPrompt.value = basic.default_system_prompt || "";
     if (settingOllamaUrl) settingOllamaUrl.value = basic.ollama_url || "http://localhost:11434";
